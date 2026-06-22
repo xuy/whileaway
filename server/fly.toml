@@ -1,9 +1,8 @@
-# Fly.io config for the vibefeed backend.
-#   fly launch --no-deploy   (first time, to create the app / pick a name)
-#   fly deploy
-# Optional: protect the public endpoint with a token:
-#   fly secrets set FEED_TOKEN=$(openssl rand -hex 16)
-app = "vibefeed"
+# Fly.io config for the vibefeed bus.
+#   fly apps create vibefeed-bus
+#   fly secrets set VIBEFEED_KEY=$(openssl rand -hex 18) --app vibefeed-bus
+#   fly deploy --app vibefeed-bus --ha=false
+app = "vibefeed-bus"
 primary_region = "iad"
 
 [build]
@@ -11,10 +10,6 @@ primary_region = "iad"
 
 [env]
   PORT = "8080"
-  # Persist bus state on the mounted volume (survives restarts/deploys).
-  VIBEFEED_STATE = "/data/.vibefeed-state.json"
-  # Set a stable publisher key via secrets so pushers survive restarts:
-  #   fly secrets set VIBEFEED_KEY=$(openssl rand -hex 18)
 
 [http_service]
   internal_port = 8080
@@ -27,8 +22,11 @@ primary_region = "iad"
   size = "shared-cpu-1x"
   memory = "256mb"
 
-# A tiny volume just for the JSON state file. Create with:
-#   fly volumes create vibefeed_data --size 1 --region iad
-[[mounts]]
-  source = "vibefeed_data"
-  destination = "/data"
+# State is in-memory here (ephemeral): default channels/subscriptions are re-seeded on boot and
+# the pushers repopulate content, so the demo self-heals on restart. For durable custom channels/
+# subscriptions, add a volume and uncomment the mount below:
+#   fly volumes create vibefeed_data --size 1 --region iad --app vibefeed-bus
+# [env] VIBEFEED_STATE = "/data/.vibefeed-state.json"
+# [[mounts]]
+#   source = "vibefeed_data"
+#   destination = "/data"

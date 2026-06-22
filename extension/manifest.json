@@ -13,7 +13,7 @@
   "permissions": ["storage"],
   "host_permissions": [
     "http://localhost:4000/*",
-    "https://vibefeed.fly.dev/*",
+    "https://vibefeed-bus.fly.dev/*",
     "https://chatgpt.com/*",
     "https://chat.openai.com/*",
     "https://claude.ai/*",

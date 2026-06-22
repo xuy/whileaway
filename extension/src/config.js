@@ -8,8 +8,8 @@ var VF_DEBUG = true; // console logs on the AI page; set false to silence
 
 var VF_ENVS = {
   dev: { api: "http://localhost:4000" },
-  // Replace with your Fly app once deployed, e.g. https://vibefeed.fly.dev
-  prod: { api: "https://vibefeed.fly.dev" },
+  // Replace with your Fly app once deployed, e.g. https://vibefeed-bus.fly.dev
+  prod: { api: "https://vibefeed-bus.fly.dev" },
 };
 
 var VF_API_BASE = VF_ENVS[VF_ENV].api;

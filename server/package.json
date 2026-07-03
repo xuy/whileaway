@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "pushers": "node clients/runner.js"
+    "pushers": "node clients/runner.js",
+    "test": "VIBEFEED_STATE=.vibefeed-test-state.json node --test"
   },
   "engines": {
     "node": ">=20"

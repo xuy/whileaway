@@ -43,6 +43,13 @@ export function save() {
   }, 300);
 }
 
+// Test-only: wipe all in-memory collections and cancel any pending write so each test starts
+// from a clean db without touching the on-disk state file. Not used by the running server.
+export function reset() {
+  clearTimeout(saveTimer);
+  for (const k of Object.keys(db)) db[k] = {};
+}
+
 // --- helpers ---------------------------------------------------------------
 export function deliveryKey(userId, itemId) {
   return userId + "|" + itemId;

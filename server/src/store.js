@@ -3,13 +3,15 @@
 // default; sqlite lands in T-11). Everything the bus needs lives here: owners, publisher keys
 // (hashed), channels, items, per-user subscriptions, per-user delivery state, per-user history.
 import { JsonDriver } from "./drivers/json.js";
+import { SqliteDriver } from "./drivers/sqlite.js";
 
 // Select the storage driver. Explicit and fail-loud on an unknown value.
 function selectDriver() {
   const kind = process.env.VIBEFEED_STORE || "json";
   switch (kind) {
     case "json": return new JsonDriver();
-    default: throw new Error(`unknown VIBEFEED_STORE="${kind}" (expected "json")`);
+    case "sqlite": return new SqliteDriver();
+    default: throw new Error(`unknown VIBEFEED_STORE="${kind}" (expected "json" or "sqlite")`);
   }
 }
 const driver = selectDriver();

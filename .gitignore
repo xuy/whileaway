@@ -3,4 +3,7 @@ node_modules/
 .DS_Store
 server/.vibefeed-state.json
 server/.vibefeed-test-state.json
+server/*.db
+server/*.db-wal
+server/*.db-shm
 .env

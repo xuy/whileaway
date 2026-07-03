@@ -1,11 +1,18 @@
-// In-memory data store with JSON persistence. Small and dependency-free on purpose — the
-// shape is what matters; swapping in Postgres later is a mechanical change behind these
-// accessors. Everything the bus needs lives here: owners, publisher keys (hashed), channels,
-// items, per-user subscriptions, per-user delivery state, and per-user history.
-import fs from "node:fs";
-import path from "node:path";
+// In-memory working set with pluggable persistence. The `db` shape is what matters; the actual
+// load/save is delegated to a storage DRIVER selected by VIBEFEED_STORE (json = self-host
+// default; sqlite lands in T-11). Everything the bus needs lives here: owners, publisher keys
+// (hashed), channels, items, per-user subscriptions, per-user delivery state, per-user history.
+import { JsonDriver } from "./drivers/json.js";
 
-const STATE_FILE = process.env.VIBEFEED_STATE || path.join(process.cwd(), ".vibefeed-state.json");
+// Select the storage driver. Explicit and fail-loud on an unknown value.
+function selectDriver() {
+  const kind = process.env.VIBEFEED_STORE || "json";
+  switch (kind) {
+    case "json": return new JsonDriver();
+    default: throw new Error(`unknown VIBEFEED_STORE="${kind}" (expected "json")`);
+  }
+}
+const driver = selectDriver();
 
 export const db = {
   owners: {}, // ownerId -> { id, label }
@@ -23,24 +30,14 @@ const MAX_ITEMS_PER_CHANNEL = 250;
 const MAX_HISTORY = 200;
 
 export function load() {
-  try {
-    const raw = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
-    for (const k of Object.keys(db)) if (raw[k]) db[k] = raw[k];
-  } catch {
-    /* first run */
-  }
+  const raw = driver.load() || {};
+  for (const k of Object.keys(db)) if (raw[k]) db[k] = raw[k];
 }
 
 let saveTimer = null;
 export function save() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    try {
-      fs.writeFileSync(STATE_FILE, JSON.stringify(db));
-    } catch (e) {
-      console.warn("[vibefeed] persist failed:", e.message);
-    }
-  }, 300);
+  saveTimer = setTimeout(() => driver.save(db), 300);
 }
 
 // Test-only: wipe all in-memory collections and cancel any pending write so each test starts

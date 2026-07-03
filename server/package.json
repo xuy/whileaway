@@ -8,12 +8,15 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "pushers": "node clients/runner.js",
-    "test": "VIBEFEED_STATE=.vibefeed-test-state.json node --test"
+    "migrate:sqlite": "node scripts/migrate-json-to-sqlite.js",
+    "test": "VIBEFEED_STATE=.vibefeed-test-state.json node --test",
+    "test:sqlite": "VIBEFEED_STORE=sqlite VIBEFEED_STATE=.vibefeed-test.db node --test"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
+    "better-sqlite3": "^12.11.1",
     "express": "^4.21.2"
   }
 }

@@ -119,7 +119,15 @@ app.post("/v1/channels", publisher, wrap((req) => {
   if (!bus.hasScope(req.auth.scopes, "create:lane")) {
     const e = new Error("token lacks create:lane scope"); e.status = 403; throw e;
   }
-  return { channel: bus.createChannel(req.body || {}, req.ownerId) };
+  const channel = bus.createChannel(req.body || {}, req.ownerId); // auto-subscribes the owner
+  // Also subscribe the token's CONSUMER identity when it differs from the owner (the self-host
+  // boot key is userId=local / ownerId=owner_default), so the same token that creates a lane also
+  // receives its cards in the feed.
+  if (req.auth.userId && req.auth.userId !== req.ownerId) {
+    bus.ensureUser(req.auth.userId); // seed public subs first (see createChannel) — avoid a partial record
+    bus.subscribe(req.auth.userId, channel.id, { force: true });
+  }
+  return { channel };
 }));
 app.get("/v1/channels/:id", wrap((req) => {
   const notFound = () => { const e = new Error("not found"); e.status = 404; throw e; };

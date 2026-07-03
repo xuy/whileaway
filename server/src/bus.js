@@ -117,6 +117,14 @@ export function createChannel(spec, ownerId) {
     createdAt: new Date().toISOString(),
   };
   db.channels[id] = ch;
+  // Seed the owner's public/default subscriptions FIRST (ensureUser no-ops if they already have a
+  // subs record). Doing this before the force-subscribe below avoids creating a partial subs
+  // record that would make a later ensureUser() early-return and skip public-channel seeding.
+  ensureUser(ownerId);
+  // Auto-subscribe the owner to their new lane. Delivery only serves SUBSCRIBED channels, so
+  // without this a card pushed to a freshly-created lane would never reach the owner's feed
+  // (in hosted mode userId === ownerId, so this is exactly "you receive what you push here").
+  subscribe(ownerId, id, { force: true });
   save();
   return ch;
 }

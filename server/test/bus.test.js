@@ -124,6 +124,31 @@ test("a stranger cannot subscribe to someone else's private channel", () => {
   assert.throws(() => bus.subscribe("stranger", "secret"), /private/);
 });
 
+// --- owner receives what they push to their own lane ------------------------
+test("creating a lane auto-subscribes the owner so their pushes reach their feed", () => {
+  reset();
+  bus.ensureOwner("acct", "account");
+  bus.createChannel({ id: "spanish", title: "Spanish", visibility: "private" }, "acct");
+  // No explicit subscribe — creation subscribed the owner. In hosted, userId === ownerId, so
+  // "acct" is both producer and consumer and must see the card.
+  bus.pushItem("spanish", { title: "hola" }, "acct");
+  const item = bus.next("acct");
+  assert.ok(item, "owner should receive a card pushed to a lane they just created");
+  assert.equal(item.title, "hola");
+});
+
+test("creating a lane before first feed still seeds the owner's public subscriptions", () => {
+  reset();
+  bus.ensureOwner("sys", "system");
+  bus.createChannel({ id: "pub1", title: "Public", visibility: "public" }, "sys"); // a public lane exists
+  bus.ensureOwner("acct", "account");
+  bus.createChannel({ id: "mylane", title: "Mine", visibility: "private" }, "acct"); // acct creates a lane FIRST
+  const chans = bus.listChannels("acct");
+  // Owner-subscribe must not have short-circuited public seeding:
+  assert.ok(chans.some((c) => c.id === "pub1" && c.subscribed), "public channel should still be seeded");
+  assert.ok(chans.some((c) => c.id === "mylane" && c.subscribed), "own new lane is subscribed");
+});
+
 // --- single-channel visibility (no metadata leak by id) ---------------------
 test("channelVisibleTo: public to all, private only to owner or subscriber", () => {
   reset();

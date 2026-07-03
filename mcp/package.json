@@ -1,0 +1,25 @@
+{
+  "name": "whileaway-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that turns any agent into a whileaway producer — push cards to your idle-moment feed in one sentence.",
+  "type": "module",
+  "bin": {
+    "whileaway-mcp": "src/index.js"
+  },
+  "main": "src/client.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.1 || ^4.0.0"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ]
+}

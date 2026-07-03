@@ -1,4 +1,4 @@
-# vibefeed v0 — Work Breakdown (agent-ready)
+# whileaway v0 — Work Breakdown (agent-ready)
 
 Companion to `V0-SPEC.md`. Each task card is sized to be handed to a coding agent as a single
 overnight run: self-contained brief, explicit acceptance criteria, and no hidden context — the
@@ -36,7 +36,7 @@ tests before anyone modifies them.
 
 **T-02 · Storage driver seam** — deps: T-01
 Refactor `store.js` into a driver interface with the current JSON-file implementation behind it.
-No behavior change. *Accept:* all T-01 tests pass unmodified; `VIBEFEED_STORE=json` explicit.
+No behavior change. *Accept:* all T-01 tests pass unmodified; `WHILEAWAY_STORE=json` explicit.
 
 ## WS1 — Server
 
@@ -63,25 +63,25 @@ Per-token push limit, per-user pull limit, lane count cap, per-user item cap; 42
 Retry-After. *Accept:* tests prove limits; normal single-user usage never trips them.
 
 **T-14 · Production deploy** — deps: T-11, T-12, T-13 · human-assisted (accounts, domain, DNS)
-A Fly host (`vibefeed-bus.fly.dev`) is already referenced in the extension manifest — build on
+A Fly host (`whileaway-bus.fly.dev`) is already referenced in the extension manifest — build on
 it: volume for SQLite, HTTPS, custom domain, env docs, deploy runbook in `docs/DEPLOY.md`.
 *Accept:* hosted instance live on the production domain; signup → card in extension works
 end-to-end against it.
 
 ## WS2 — MCP server
 
-**T-20 · `vibefeed-mcp` package** — deps: T-10
+**T-20 · `whileaway-mcp` package** — deps: T-10
 New `mcp/` workspace: stdio MCP server (`@modelcontextprotocol/sdk`), tools exactly per spec §6
 (`push_card`, `push_deck`, `create_lane`, `list_lanes`, `get_history`, `get_feed_status`).
 Tool descriptions must teach delivery semantics with 3 worked examples each — treat description
-text as product surface, not boilerplate. *Accept:* `npx vibefeed-mcp` against a local bus; a
+text as product surface, not boilerplate. *Accept:* `npx whileaway-mcp` against a local bus; a
 Claude Code session with only the one-sentence prompt *"push a 20-card Spanish greetings deck to
-my vibefeed, spaced over two weeks"* produces a correctly-repeating deck without follow-up
+my whileaway, spaced over two weeks"* produces a correctly-repeating deck without follow-up
 questions.
 
 **T-21 · Publish + client configs** — deps: T-20 · human-assisted (npm org)
 Publish to npm; README with config snippets for Claude Code, Claude Desktop, Cursor; version the
-API base path. *Accept:* `claude mcp add vibefeed …` from README works verbatim.
+API base path. *Accept:* `claude mcp add whileaway …` from README works verbatim.
 
 ## WS3 — Chrome extension  ⚠️ critical path
 
@@ -115,7 +115,7 @@ spec §9 flow steps 1–3 complete in under 3 minutes using only the dashboard.
 **T-41 · Landing page + docs** — deps: T-40
 The pitch, demo GIF slot, three producer-in-a-sentence examples, install CTA, quickstart page,
 self-host guide, privacy policy page (required by T-30 — write early and link). *Accept:* a
-cold reader can explain what vibefeed does after 30 seconds on the page.
+cold reader can explain what whileaway does after 30 seconds on the page.
 
 ## WS5 — Content & examples
 

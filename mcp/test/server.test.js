@@ -29,7 +29,7 @@ async function waitForHealth(tries = 60) {
 before(async () => {
   const stateFile = path.join(os.tmpdir(), `wa-mcpsrv-${process.pid}.json`);
   bus = spawn("node", [SERVER], {
-    env: { ...process.env, PORT: String(PORT), VIBEFEED_KEY: KEY, VIBEFEED_STATE: stateFile, RUN_DEFAULT_PUSHERS: "0", AUTH_MODE: "none" },
+    env: { ...process.env, PORT: String(PORT), WHILEAWAY_KEY: KEY, WHILEAWAY_STATE: stateFile, RUN_DEFAULT_PUSHERS: "0", AUTH_MODE: "none" },
     stdio: "ignore",
   });
   await waitForHealth();

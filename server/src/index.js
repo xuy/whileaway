@@ -1,4 +1,4 @@
-// vibefeed bus — HTTP API. Two surfaces:
+// whileaway bus — HTTP API. Two surfaces:
 //   • Producer (auth via publisher key): create channels, push items.
 //   • Consumer (a user identity; open by default for local self-host): pull the feed, manage
 //     subscriptions, browse the channel directory.
@@ -19,7 +19,7 @@ const AUTH_MODE = process.env.AUTH_MODE || "none"; // "none" (self-host) | "host
 if (!["none", "hosted"].includes(AUTH_MODE)) {
   // Fail closed: an unrecognized value (e.g. a typo like "HOSTED") must never silently degrade to
   // the header-trusting self-host path in what was meant to be a hosted deployment.
-  console.error(`[vibefeed] invalid AUTH_MODE="${AUTH_MODE}" — expected "none" or "hosted"`);
+  console.error(`[whileaway] invalid AUTH_MODE="${AUTH_MODE}" — expected "none" or "hosted"`);
   process.exit(1);
 }
 let DEFAULT_KEY = null; // the boot publisher key, revealed only to loopback callers
@@ -34,23 +34,23 @@ app.use(express.static(path.join(__dirname, "../public")));
 
 app.use((req, res, next) => {
   res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Vibefeed-User");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Whileaway-User");
   res.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
 
-// Consumer identity. Clients send a stable random id via X-Vibefeed-User so each browser gets
+// Consumer identity. Clients send a stable random id via X-Whileaway-User so each browser gets
 // its own subscriptions/feed/history on the shared bus (no login). Falls back to "local" for
 // bare API calls. ensureUser seeds a brand-new id with the public channels on first contact.
 // Consumer identity. A bearer token with read scope names the user (hosted); otherwise fall
-// back to the X-Vibefeed-User header (self-host, unchanged). ensureUser seeds a brand-new id
+// back to the X-Whileaway-User header (self-host, unchanged). ensureUser seeds a brand-new id
 // with the public channels on first contact.
 function user(req) {
   const u = bus.consumerIdentity({
     authMode: AUTH_MODE,
     token: bearer(req),
-    headerUser: req.get("X-Vibefeed-User") || req.query.user || LOCAL_USER,
+    headerUser: req.get("X-Whileaway-User") || req.query.user || LOCAL_USER,
   });
   bus.ensureUser(u);
   return u;
@@ -176,9 +176,9 @@ bus.init();
 const { key } = bootstrap();
 DEFAULT_KEY = key;
 app.listen(PORT, () => {
-  console.log(`[vibefeed] bus on http://localhost:${PORT} (auth mode: ${AUTH_MODE})`);
-  console.log(`[vibefeed] default publisher key: ${key}${process.env.VIBEFEED_KEY ? "" : "  (ephemeral — set VIBEFEED_KEY to persist)"}`);
+  console.log(`[whileaway] bus on http://localhost:${PORT} (auth mode: ${AUTH_MODE})`);
+  console.log(`[whileaway] default publisher key: ${key}${process.env.WHILEAWAY_KEY ? "" : "  (ephemeral — set WHILEAWAY_KEY to persist)"}`);
   if (process.env.RUN_DEFAULT_PUSHERS !== "0") {
-    startPushers(`http://localhost:${PORT}`, key).catch((e) => console.warn("[vibefeed] pushers:", e.message));
+    startPushers(`http://localhost:${PORT}`, key).catch((e) => console.warn("[whileaway] pushers:", e.message));
   }
 });

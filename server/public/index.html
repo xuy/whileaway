@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>vibefeed · API</title>
+<title>whileaway · API</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -132,7 +132,7 @@
 <body>
 <div class="app">
   <aside>
-    <div class="brand"><div class="mark"></div><b>vibefeed</b></div>
+    <div class="brand"><div class="mark"></div><b>whileaway</b></div>
     <nav id="nav">
       <button data-tab="overview" class="on">Overview</button>
       <div class="navgrp">Resources</div>
@@ -152,7 +152,7 @@
     <!-- OVERVIEW -->
     <section class="panel on" data-panel="overview">
       <div class="eyebrow">API</div>
-      <h1>vibefeed</h1>
+      <h1>whileaway</h1>
       <p class="lede">A push API for ambient cards. Producers push items onto channels; consumers subscribe and the delivery engine serves one card at a time. The interface below is just a thin client over the same REST API.</p>
       <div class="cards">
         <div class="stat"><div class="n" id="s_channels">—</div><div class="l">Channels</div></div>
@@ -255,7 +255,7 @@
     <section class="panel" data-panel="feed">
       <div class="eyebrow">Consumer</div>
       <h1>Feed</h1>
-      <p class="lede">The delivery engine returns the single best card for the calling consumer, or <code class="mono">204</code> when nothing is eligible. Identity comes from the <code class="mono">X-Vibefeed-User</code> header.</p>
+      <p class="lede">The delivery engine returns the single best card for the calling consumer, or <code class="mono">204</code> when nothing is eligible. Identity comes from the <code class="mono">X-Whileaway-User</code> header.</p>
       <div class="ep"><span class="method get">GET</span><code>/v1/feed/next</code></div>
       <div class="split">
         <div>
@@ -297,7 +297,7 @@
       <div class="card">
         <div class="field"><label>Base URL</label><input id="set_base" class="mono" placeholder="http://localhost:4000" /></div>
         <div class="field"><label>Publisher key <span class="opt">stored locally in this browser</span></label><input id="set_key" class="mono" placeholder="vf_pk_…" /></div>
-        <div class="field"><label>Consumer identity <span class="opt">X-Vibefeed-User</span></label><input id="set_user" class="mono" readonly /></div>
+        <div class="field"><label>Consumer identity <span class="opt">X-Whileaway-User</span></label><input id="set_user" class="mono" readonly /></div>
         <button class="btn" id="set_save">Save</button>
       </div>
     </section>

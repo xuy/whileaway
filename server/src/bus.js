@@ -60,7 +60,7 @@ export function resolveToken(token) {
 }
 
 // Resolve the consumer identity for a request.
-//   • hosted: identity comes ONLY from a read-scoped bearer token — the X-Vibefeed-User header
+//   • hosted: identity comes ONLY from a read-scoped bearer token — the X-Whileaway-User header
 //     is untrusted (it would let anyone impersonate another user). Missing/unscoped → 401.
 //   • none (self-host): identity is the stable per-browser header, exactly as before T-10. A
 //     bearer token here is a PRODUCER credential only and must not change consumer identity —

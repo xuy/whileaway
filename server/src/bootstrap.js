@@ -16,7 +16,7 @@ export const DEFAULT_CHANNELS = [
 ];
 
 export function bootstrap() {
-  bus.ensureOwner(OWNER_ID, "vibefeed defaults");
+  bus.ensureOwner(OWNER_ID, "whileaway defaults");
 
   // Publisher key: prefer env (stable across restarts, usable by external pushers); else mint
   // one for this process so in-process pushers work out of the box.
@@ -24,12 +24,12 @@ export function bootstrap() {
   // while it PUSHES as OWNER_ID — a legitimately distinct (userId, ownerId) pair. This keeps
   // self-host byte-identical: pasting the boot key into the extension still shows the `local`
   // feed, and the one key both pulls that feed and pushes to the default lanes.
-  let key = process.env.VIBEFEED_KEY;
+  let key = process.env.WHILEAWAY_KEY;
   if (key) {
     if (!bus.ownerForKey(key)) bus.registerKey(key, OWNER_ID, "env key", { userId: LOCAL_USER });
     else bus.setKeyIdentity(key, { userId: LOCAL_USER }); // upgrade a pre-T-10 record in place
   } else {
-    key = bus.mintKey(OWNER_ID, "auto (set VIBEFEED_KEY to persist)", { userId: LOCAL_USER });
+    key = bus.mintKey(OWNER_ID, "auto (set WHILEAWAY_KEY to persist)", { userId: LOCAL_USER });
   }
 
   for (const spec of DEFAULT_CHANNELS) {

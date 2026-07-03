@@ -1,6 +1,6 @@
-# vibefeed
+# whileaway
 
-**While the AI thinks, skim one useful thing.** vibefeed shows a small card in the corner of
+**While the AI thinks, skim one useful thing.** whileaway shows a small card in the corner of
 ChatGPT / Claude / Perplexity / Gemini / etc. *the moment you send a prompt* — surfacing one item
 from a feed you control, instead of an ad.
 
@@ -16,7 +16,7 @@ time, never a scroll.
 
 ## 🔒 Privacy first
 
-vibefeed **never reads your prompt, the AI's answer, page text, links, or citations.** The content
+whileaway **never reads your prompt, the AI's answer, page text, links, or citations.** The content
 script only detects *that a generation started* (form submit / Enter / send-click / the AI's "stop"
 button) and asks **your** backend for the next card. Nothing about the page leaves your browser. No
 ads, no trackers, no account required. And because the only channels that can reach you are ones
@@ -45,7 +45,7 @@ it's **reference push-clients** in [`server/clients/`](server/clients) pushing i
 own, over the same public API any integrator would use.
 
 ```
-vibefeed/
+whileaway/
 ├── server/
 │   ├── src/          the bus: store · bus (delivery engine) · bootstrap · http
 │   └── clients/      reference pushers (wikipedia · hackernews · rss · mock) + sources
@@ -68,7 +68,7 @@ On boot it seeds default channels, auto-subscribes your local user, prints a **p
 runs the bundled pushers in-process so the feed is populated immediately. Check it:
 `curl localhost:4000/health`.
 
-> Set `VIBEFEED_KEY` in `.env` to a stable key (so external pushers survive restarts), or
+> Set `WHILEAWAY_KEY` in `.env` to a stable key (so external pushers survive restarts), or
 > `RUN_DEFAULT_PUSHERS=0` to push only from your own clients (`npm run pushers` runs them standalone).
 
 ### 2. Load the extension
@@ -105,7 +105,7 @@ Push an item:
 
 ```bash
 curl -X POST localhost:4000/v1/channels/personal/items \
-  -H "Authorization: Bearer $VIBEFEED_KEY" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $WHILEAWAY_KEY" -H "Content-Type: application/json" \
   -d '{
     "title": "Standup in 10 min",
     "body": "Daily · Google Meet",
@@ -118,7 +118,7 @@ curl -X POST localhost:4000/v1/channels/personal/items \
 
 ## Write your own pusher
 
-That's the whole point — vibefeed stays out of the integration business; you push what you care
+That's the whole point — whileaway stays out of the integration business; you push what you care
 about. Create a channel once, then push to it on a cron from anywhere (a script, a Lambda, a
 Shortcut). Anything that produces the item shape above works — your read-later queue, a Twitter
 list you export, your home automation, a teammate's announcements. See
@@ -137,4 +137,4 @@ control of what can reach them.
 
 ## License
 
-[Apache-2.0](./LICENSE) © vibefeed contributors.
+[Apache-2.0](./LICENSE) © whileaway contributors.

@@ -1,10 +1,10 @@
-# vibefeed v0 — Product & Technical Spec
+# whileaway v0 — Product & Technical Spec
 
 Status: draft for build · Owner: Eric · Last updated: 2026-07-03
 
 ## 1. One-liner
 
-**Your agents push to your idle moments.** While an AI is thinking, vibefeed shows one card you
+**Your agents push to your idle moments.** While an AI is thinking, whileaway shows one card you
 (or your agents) chose — not an ad. v0 is a single-user product: a hosted service + self-hostable
 bus, a Chrome extension that renders cards during AI generations, and an MCP server so any agent
 can become a producer in one sentence.
@@ -17,7 +17,7 @@ In scope:
 
 - **Hosted instance** at the production domain (signup → working feed in <5 minutes), plus
   **self-host mode** that works exactly like today's repo (no auth, local key).
-- **MCP server** (`vibefeed-mcp`, npm, stdio) exposing push + read tools.
+- **MCP server** (`whileaway-mcp`, npm, stdio) exposing push + read tools.
 - **Chrome extension** published on the Chrome Web Store, authenticated by token.
 - **Accounts (hosted only):** email magic link + Google sign-in via Better Auth. Dashboard mints
   bearer tokens. Self-host runs `AUTH_MODE=none`.
@@ -46,9 +46,9 @@ v0 is the team architecture instantiated at n=1. Four rules keep the migration a
 ## 4. Architecture
 
 ```
-                       hosted: vibefeed.<domain>          self-host: localhost:4000
+                       hosted: whileaway.<domain>          self-host: localhost:4000
 ┌─────────────┐  MCP (stdio)  ┌──────────────────────────────────────────┐
-│ Claude/agent│──────────────▶│  vibefeed-mcp  ──HTTP──▶  bus (Express)  │
+│ Claude/agent│──────────────▶│  whileaway-mcp  ──HTTP──▶  bus (Express)  │
 └─────────────┘   push_card   └──────────────────────────────────────────┘
                                      ▲                        │
 ┌─────────────┐  GET /v1/feed/next   │        SQLite (hosted) │ JSON file (self-host)
@@ -64,7 +64,7 @@ extends the existing `server/public` console rather than a separate app).
 
 ### 5.1 Identity & auth
 
-- **`AUTH_MODE=none` (self-host default):** current behavior, unchanged. `X-Vibefeed-User`
+- **`AUTH_MODE=none` (self-host default):** current behavior, unchanged. `X-Whileaway-User`
   header / `LOCAL_USER`, boot publisher key printed to console.
 - **`AUTH_MODE=hosted`:** Better Auth (email magic link + Google), sessions for the web
   dashboard only. Extension and MCP never do OAuth — they use **bearer tokens** minted from the
@@ -87,7 +87,7 @@ extends the existing `server/public` console rather than a separate app).
 - Rate limits: per-token push (e.g. 60/min), per-user feed pulls (e.g. 120/min).
 - Payload caps already exist (256kb); add per-user item cap and lane cap (e.g. 50 lanes).
 - CORS: keep `*` for GET feed routes; token is the credential.
-- Deploy: Fly.io or Railway, single region, HTTPS, `VIBEFEED_STATE` on a volume until SQLite
+- Deploy: Fly.io or Railway, single region, HTTPS, `WHILEAWAY_STATE` on a volume until SQLite
   lands. Health check exists (`/health`).
 
 ### 5.4 API deltas (existing `/v1` is otherwise unchanged)
@@ -98,9 +98,9 @@ extends the existing `server/public` console rather than a separate app).
 | GET | `/v1/me` | new: identity, lanes, token labels |
 | * | all existing | accept unified bearer token; `AUTH_MODE=none` keeps today's behavior |
 
-## 6. MCP server (`vibefeed-mcp`)
+## 6. MCP server (`whileaway-mcp`)
 
-npm package, stdio transport, config via `VIBEFEED_URL` + `VIBEFEED_TOKEN`. Thin wrapper over
+npm package, stdio transport, config via `WHILEAWAY_URL` + `WHILEAWAY_TOKEN`. Thin wrapper over
 `/v1` — no state, no intelligence. Tools:
 
 | tool | maps to | notes |
@@ -108,7 +108,7 @@ npm package, stdio transport, config via `VIBEFEED_URL` + `VIBEFEED_TOKEN`. Thin
 | `push_card` | POST `/v1/channels/:lane/items` | title, body, url?, image_url?, lane?, priority?, class (`ambient`\|`must_see`), expires_at?, repeat? (`once`\|`recurring`+cooldown_s+max), dedupe_key?. Creates the lane if missing. |
 | `push_deck` | loop of push_card | convenience: array of cards + shared repeat/cooldown. This is the "push 50 Spanish cards once, bus drips them for weeks" move. |
 | `create_lane` / `list_lanes` | POST/GET `/v1/channels` | lanes are private channels owned by the token's owner |
-| `get_history` | GET `/v1/feed/history` | what was delivered + seen state — lets agents do spaced repetition without vibefeed building an SR engine |
+| `get_history` | GET `/v1/feed/history` | what was delivered + seen state — lets agents do spaced repetition without whileaway building an SR engine |
 | `get_feed_status` | GET `/health` + `/v1/me` | queue depth per lane, so agents don't overflood |
 
 Tool descriptions are product surface: they must teach the agent the delivery semantics
@@ -133,7 +133,7 @@ Single small site served by the bus at `/`:
 - **Landing:** the pitch, a 20-second looping demo (screen recording of a card appearing over
   Claude), three copy-paste examples of producer-in-a-sentence, install CTA.
 - **Dashboard (session-auth'd):** token mint/revoke with copy buttons, ready-made MCP config
-  snippet (`claude mcp add vibefeed …` + JSON for other clients), lanes list with mute, recent
+  snippet (`claude mcp add whileaway …` + JSON for other clients), lanes list with mute, recent
   history, starter-channel toggles.
 - **Docs page:** quickstart (5 steps), API reference (exists in README — lift it), self-host guide.
 
@@ -145,13 +145,13 @@ Single small site served by the bus at `/`:
    (starter channels guarantee content exists).
 4. Open claude.ai / chatgpt.com, send a prompt → card appears.
 5. First producer moment (the aha): tell your agent —
-   *"Add 20 cards teaching me basic Spanish greetings to my vibefeed, spaced over two weeks."*
+   *"Add 20 cards teaching me basic Spanish greetings to my whileaway, spaced over two weeks."*
 
 Success criterion: a stranger completes 1–4 in under 5 minutes without reading docs.
 
 ## 10. Launch checklist (Show HN)
 
-- Title: "Show HN: Vibefeed — your agents push to the seconds you spend waiting on AI"
+- Title: "Show HN: Whileaway — your agents push to the seconds you spend waiting on AI"
 - Assets: demo GIF (card over a thinking Claude), README overhaul leading with MCP example,
   `demo.html` link for zero-install skeptics, self-host quickstart above the fold.
 - First comment (yours): the ads-vs-your-own-feed framing, privacy model, and the "push a deck

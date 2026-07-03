@@ -15,7 +15,7 @@ export async function fetchWithTimeout(url, opts = {}, ms = 8000) {
       signal: ctrl.signal,
       headers: {
         // A descriptive UA keeps us polite and avoids Reddit/Wikipedia 429s.
-        "User-Agent": "vibefeed/0.1 (+https://github.com/local/vibefeed)",
+        "User-Agent": "whileaway/0.1 (+https://github.com/local/whileaway)",
         Accept: "application/json, text/xml, */*",
         ...(opts.headers || {}),
       },

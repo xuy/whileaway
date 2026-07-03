@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 export class JsonDriver {
-  constructor(file = process.env.VIBEFEED_STATE || path.join(process.cwd(), ".vibefeed-state.json")) {
+  constructor(file = process.env.WHILEAWAY_STATE || path.join(process.cwd(), ".whileaway-state.json")) {
     this.file = file;
   }
 
@@ -17,6 +17,6 @@ export class JsonDriver {
 
   save(db) {
     try { fs.writeFileSync(this.file, JSON.stringify(db)); }
-    catch (e) { console.warn("[vibefeed] persist failed:", e.message); }
+    catch (e) { console.warn("[whileaway] persist failed:", e.message); }
   }
 }

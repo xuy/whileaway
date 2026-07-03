@@ -1,5 +1,5 @@
 // In-memory working set with pluggable persistence. The `db` shape is what matters; the actual
-// load/save is delegated to a storage DRIVER selected by VIBEFEED_STORE (json = self-host
+// load/save is delegated to a storage DRIVER selected by WHILEAWAY_STORE (json = self-host
 // default; sqlite lands in T-11). Everything the bus needs lives here: owners, publisher keys
 // (hashed), channels, items, per-user subscriptions, per-user delivery state, per-user history.
 import { JsonDriver } from "./drivers/json.js";
@@ -7,11 +7,11 @@ import { SqliteDriver } from "./drivers/sqlite.js";
 
 // Select the storage driver. Explicit and fail-loud on an unknown value.
 function selectDriver() {
-  const kind = process.env.VIBEFEED_STORE || "json";
+  const kind = process.env.WHILEAWAY_STORE || "json";
   switch (kind) {
     case "json": return new JsonDriver();
     case "sqlite": return new SqliteDriver();
-    default: throw new Error(`unknown VIBEFEED_STORE="${kind}" (expected "json" or "sqlite")`);
+    default: throw new Error(`unknown WHILEAWAY_STORE="${kind}" (expected "json" or "sqlite")`);
   }
 }
 const driver = selectDriver();

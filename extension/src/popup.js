@@ -1,4 +1,4 @@
-// vibefeed popup — status, live preview, source toggles, settings, history.
+// whileaway popup — status, live preview, source toggles, settings, history.
 const api = (typeof browser !== "undefined" && browser.runtime) ? browser : chrome;
 const DEFAULT_BASE = typeof VF_API_BASE !== "undefined" ? VF_API_BASE : "http://localhost:4000";
 const $ = (id) => document.getElementById(id);
@@ -24,7 +24,7 @@ function url(path) { return state.base.replace(/\/$/, "") + path; }
 function headers() {
   const h = { "Content-Type": "application/json" };
   if (state.token) h.Authorization = "Bearer " + state.token;
-  if (state.user) h["X-Vibefeed-User"] = state.user;
+  if (state.user) h["X-Whileaway-User"] = state.user;
   return h;
 }
 async function get(path) {

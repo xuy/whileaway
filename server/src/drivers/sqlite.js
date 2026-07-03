@@ -9,7 +9,7 @@ import path from "node:path";
 const COLLECTIONS = ["owners", "keys", "channels", "items", "itemsByChannel", "subs", "delivery", "history", "cursor"];
 
 export class SqliteDriver {
-  constructor(file = process.env.VIBEFEED_STATE || path.join(process.cwd(), ".vibefeed.db")) {
+  constructor(file = process.env.WHILEAWAY_STATE || path.join(process.cwd(), ".whileaway.db")) {
     this.db = new Database(file);
     this.db.pragma("journal_mode = WAL");
     for (const c of COLLECTIONS) {

@@ -26,7 +26,7 @@ async function waitForHealth(tries = 60) {
 }
 // Pull the single next card for a fresh consumer id (auto-subscribed to public lanes).
 async function pullAs(userId) {
-  const r = await fetch(BASE + "/v1/feed/next", { headers: { "X-Vibefeed-User": userId } });
+  const r = await fetch(BASE + "/v1/feed/next", { headers: { "X-Whileaway-User": userId } });
   return r.status === 204 ? null : r.json();
 }
 // Drain a consumer's whole feed to a list of titles. Robust to round-robin interleaving across
@@ -40,7 +40,7 @@ async function drain(userId, cap = 80) {
 before(async () => {
   const stateFile = path.join(os.tmpdir(), `wa-mcp-${process.pid}.json`);
   proc = spawn("node", [SERVER], {
-    env: { ...process.env, PORT: String(PORT), VIBEFEED_KEY: KEY, VIBEFEED_STATE: stateFile, RUN_DEFAULT_PUSHERS: "0", AUTH_MODE: "none" },
+    env: { ...process.env, PORT: String(PORT), WHILEAWAY_KEY: KEY, WHILEAWAY_STATE: stateFile, RUN_DEFAULT_PUSHERS: "0", AUTH_MODE: "none" },
     stdio: "ignore",
   });
   await waitForHealth();

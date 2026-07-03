@@ -1,6 +1,6 @@
 // Smoke tests that PIN the delivery-engine behaviors in bus.js before WS1 modifies it.
 // Each test drives the bus through its public API exactly as the HTTP routes do. No disk I/O
-// beyond the throwaway state file named by VIBEFEED_STATE (see package.json test script); we
+// beyond the throwaway state file named by WHILEAWAY_STATE (see package.json test script); we
 // never load() it — store.reset() gives every test a clean in-memory db.
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";

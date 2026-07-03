@@ -1,8 +1,8 @@
-# Fly.io config for the vibefeed bus.
-#   fly apps create vibefeed-bus
-#   fly secrets set VIBEFEED_KEY=$(openssl rand -hex 18) --app vibefeed-bus
-#   fly deploy --app vibefeed-bus --ha=false
-app = "vibefeed-bus"
+# Fly.io config for the whileaway bus.
+#   fly apps create whileaway-bus
+#   fly secrets set WHILEAWAY_KEY=$(openssl rand -hex 18) --app whileaway-bus
+#   fly deploy --app whileaway-bus --ha=false
+app = "whileaway-bus"
 primary_region = "iad"
 
 [build]
@@ -25,8 +25,8 @@ primary_region = "iad"
 # State is in-memory here (ephemeral): default channels/subscriptions are re-seeded on boot and
 # the pushers repopulate content, so the demo self-heals on restart. For durable custom channels/
 # subscriptions, add a volume and uncomment the mount below:
-#   fly volumes create vibefeed_data --size 1 --region iad --app vibefeed-bus
-# [env] VIBEFEED_STATE = "/data/.vibefeed-state.json"
+#   fly volumes create whileaway_data --size 1 --region iad --app whileaway-bus
+# [env] WHILEAWAY_STATE = "/data/.whileaway-state.json"
 # [[mounts]]
-#   source = "vibefeed_data"
+#   source = "whileaway_data"
 #   destination = "/data"

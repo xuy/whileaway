@@ -64,10 +64,10 @@ export async function startPushers(apiBase, key) {
   t.unref?.();
 }
 
-// Standalone entry: `node clients/runner.js`  (uses VIBEFEED_API + VIBEFEED_KEY)
+// Standalone entry: `node clients/runner.js`  (uses WHILEAWAY_API + WHILEAWAY_KEY)
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const apiBase = process.env.VIBEFEED_API || "http://localhost:4000";
-  const key = process.env.VIBEFEED_KEY;
-  if (!key) { console.error("set VIBEFEED_KEY to a publisher key (see the bus startup log)"); process.exit(1); }
+  const apiBase = process.env.WHILEAWAY_API || "http://localhost:4000";
+  const key = process.env.WHILEAWAY_KEY;
+  if (!key) { console.error("set WHILEAWAY_KEY to a publisher key (see the bus startup log)"); process.exit(1); }
   startPushers(apiBase, key);
 }

@@ -1,4 +1,4 @@
-// vibefeed console — a thin client over the /v1 API, presented as developer docs.
+// whileaway console — a thin client over the /v1 API, presented as developer docs.
 const $ = (id) => document.getElementById(id);
 const qs1 = (s, r = document) => r.querySelector(s);
 
@@ -13,7 +13,7 @@ const cfg = {
   key: localStorage.getItem("vf_key") || "",
   user: makeUser(),
 };
-const keyOrVar = () => cfg.key || "$VIBEFEED_KEY";
+const keyOrVar = () => cfg.key || "$WHILEAWAY_KEY";
 const baseClean = () => cfg.base.replace(/\/$/, "");
 function url(p) { return baseClean() + p; }
 
@@ -22,7 +22,7 @@ function url(p) { return baseClean() + p; }
 // consumer reads (feed/channels/history) authenticate in hosted mode. In self-host the token is
 // ignored for identity, so this is harmless there.
 function uheaders(extra) {
-  const h = { "X-Vibefeed-User": cfg.user, ...(extra || {}) };
+  const h = { "X-Whileaway-User": cfg.user, ...(extra || {}) };
   if (cfg.key && !h.Authorization) h.Authorization = "Bearer " + cfg.key;
   return h;
 }
@@ -139,7 +139,7 @@ groupReq.qs = () => ({ method: "POST", fullUrl: `${baseClean()}/v1/channels/pers
   body: { title: "Standup in 10 minutes", body: "Daily · Google Meet", kind: "calendar", delivery: { class: "must_see", priority: 90 } } });
 groupReq.it = () => ({ method: "POST", fullUrl: `${baseClean()}/v1/channels/${$("p_channel").value || "personal"}/items`, headers: PROD_HEADERS(), body: buildItemBody() });
 groupReq.ch = () => ({ method: "POST", fullUrl: `${baseClean()}/v1/channels`, headers: PROD_HEADERS(), body: buildChannelBody() });
-groupReq.feed = () => ({ method: "GET", fullUrl: `${baseClean()}/v1/feed/next`, headers: { "X-Vibefeed-User": cfg.user } });
+groupReq.feed = () => ({ method: "GET", fullUrl: `${baseClean()}/v1/feed/next`, headers: { "X-Whileaway-User": cfg.user } });
 groupReq.auth = () => ({ method: "POST", fullUrl: `${baseClean()}/v1/channels/personal/items`, headers: PROD_HEADERS(), body: { title: "Authenticated push" } });
 
 // ---------- parameter tables ----------
@@ -168,7 +168,7 @@ const CHANNEL_PARAMS = [
   { name: "accent", type: "hex color", desc: "Card accent for this channel." },
 ];
 const FEED_PARAMS = [
-  { name: "X-Vibefeed-User", type: "header · string", desc: "Consumer identity. Each value gets its own subscriptions, feed and history on the shared bus." },
+  { name: "X-Whileaway-User", type: "header · string", desc: "Consumer identity. Each value gets its own subscriptions, feed and history on the shared bus." },
 ];
 
 // ---------- nav ----------

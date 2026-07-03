@@ -1,4 +1,4 @@
-// vibefeed content script (MV3, standalone, no imports).
+// whileaway content script (MV3, standalone, no imports).
 // While the AI generates a reply, surface ONE skimmable item from your feed in a small card.
 //
 // Privacy stance: this script never reads your prompt, the AI's answer, page links, or any
@@ -10,7 +10,7 @@
   const api = (typeof browser !== "undefined" && browser.runtime) ? browser : chrome;
   const DEFAULT_BASE = typeof VF_API_BASE !== "undefined" ? VF_API_BASE : "http://localhost:4000";
   const DEBUG = typeof VF_DEBUG !== "undefined" && VF_DEBUG;
-  const dbg = (...a) => { if (DEBUG) try { console.log("[vibefeed]", ...a); } catch (_) {} };
+  const dbg = (...a) => { if (DEBUG) try { console.log("[whileaway]", ...a); } catch (_) {} };
 
   // Delivery feel — overridable by the backend's /v1/feed/config (cached 1h) and by popup settings.
   const DEFAULT_CFG = { cooldownMs: 20000, minVisibleMs: 1500, displayMs: 11000, maxPerSession: 0 };
@@ -72,7 +72,7 @@
   function proxy(path, options = {}) {
     const headers = { ...(options.headers || {}) };
     if (TOKEN) headers.Authorization = "Bearer " + TOKEN;
-    if (USER) headers["X-Vibefeed-User"] = USER;
+    if (USER) headers["X-Whileaway-User"] = USER;
     return api.runtime.sendMessage({ type: "vf_api", url: API_BASE + path, options: { ...options, headers } });
   }
 
@@ -153,7 +153,7 @@
     const when = document.createElement("span");
     when.textContent = [item.author, timeAgo(item.ts)].filter(Boolean).join(" · ");
     const brand = document.createElement("span");
-    brand.textContent = "vibefeed";
+    brand.textContent = "whileaway";
     brand.style.cssText = "font-weight:600;letter-spacing:.02em";
     foot.appendChild(when); foot.appendChild(brand);
     wrap.appendChild(foot);

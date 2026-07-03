@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "vibefeed",
+  "name": "whileaway",
   "version": "0.1.0",
   "description": "While the AI thinks, skim one useful thing — your calendar, unread mail, RSS, HN, or a random Wikipedia article.",
   "action": {
     "default_popup": "src/popup.html",
-    "default_title": "vibefeed",
+    "default_title": "whileaway",
     "default_icon": { "16": "icons/icon-16.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" }
   },
   "icons": { "16": "icons/icon-16.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
@@ -13,7 +13,7 @@
   "permissions": ["storage"],
   "host_permissions": [
     "http://localhost:4000/*",
-    "https://vibefeed-bus.fly.dev/*",
+    "https://whileaway-bus.fly.dev/*",
     "https://chatgpt.com/*",
     "https://chat.openai.com/*",
     "https://claude.ai/*",

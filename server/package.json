@@ -1,7 +1,7 @@
 {
-  "name": "vibefeed-server",
+  "name": "whileaway-server",
   "version": "0.1.0",
-  "description": "vibefeed backend — queues ambient content (Wikipedia, HN, RSS, Reddit, personal mocks) to deliver while you wait for an AI to answer.",
+  "description": "whileaway backend — queues ambient content (Wikipedia, HN, RSS, Reddit, personal mocks) to deliver while you wait for an AI to answer.",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
@@ -9,8 +9,8 @@
     "dev": "node --watch src/index.js",
     "pushers": "node clients/runner.js",
     "migrate:sqlite": "node scripts/migrate-json-to-sqlite.js",
-    "test": "VIBEFEED_STATE=.vibefeed-test-state.json node --test",
-    "test:sqlite": "VIBEFEED_STORE=sqlite VIBEFEED_STATE=.vibefeed-test.db node --test"
+    "test": "WHILEAWAY_STATE=.whileaway-test-state.json node --test",
+    "test:sqlite": "WHILEAWAY_STORE=sqlite WHILEAWAY_STATE=.whileaway-test.db node --test --test-concurrency=1"
   },
   "engines": {
     "node": ">=20"

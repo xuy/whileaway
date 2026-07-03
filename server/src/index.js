@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import * as bus from "./bus.js";
 import { bootstrap, LOCAL_USER } from "./bootstrap.js";
 import { startPushers } from "../clients/runner.js";
+import { hit, LIMITS } from "./ratelimit.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -68,6 +69,16 @@ function publisher(req, res, next) {
   next();
 }
 
+// Fixed-window rate limit → 429 + Retry-After. Sets the header before throwing so wrap()'s JSON
+// error response carries it.
+function enforceRate(res, key, maxPerMin) {
+  const r = hit(key, maxPerMin, 60000);
+  if (!r.allowed) {
+    res.set("Retry-After", String(r.retryAfterS));
+    const e = new Error("rate limit exceeded, retry in " + r.retryAfterS + "s"); e.status = 429; throw e;
+  }
+}
+
 function wrap(fn) {
   return (req, res) => {
     try { const out = fn(req, res); if (out !== undefined) res.json(out); }
@@ -97,7 +108,9 @@ app.get("/v1/feed/config", (_req, res) => res.json(bus.CONFIG));
 
 // ---- consumer: feed ------------------------------------------------------
 app.get("/v1/feed/next", wrap((req, res) => {
-  const item = bus.next(user(req));
+  const u = user(req);
+  enforceRate(res, "pull:" + u, LIMITS.pullPerMin);
+  const item = bus.next(u);
   if (!item) return void res.status(204).end();
   res.json(item);
 }));
@@ -143,7 +156,8 @@ app.get("/v1/channels/:id", wrap((req) => {
   if (!c) notFound();
   return { channel: { id: c.id, title: c.title, description: c.description, accent: c.accent, kind: c.kind, visibility: c.visibility } };
 }));
-app.post("/v1/channels/:id/items", publisher, wrap((req) => {
+app.post("/v1/channels/:id/items", publisher, wrap((req, res) => {
+  enforceRate(res, "push:" + bearer(req), LIMITS.pushPerMin);
   if (!bus.hasScope(req.auth.scopes, "push:lane/" + req.params.id)) {
     const e = new Error("token not scoped to push to this lane"); e.status = 403; throw e;
   }

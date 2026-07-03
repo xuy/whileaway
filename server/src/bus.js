@@ -6,6 +6,7 @@ import crypto from "node:crypto";
 import {
   db, save, load, deliveryKey, getSubs, pushItemRecord, findByDedupe, addHistory,
 } from "./store.js";
+import { LIMITS } from "./ratelimit.js";
 
 // Display/delivery timings handed to the consumer client (not the per-item semantics).
 export const CONFIG = { cooldownMs: 20000, minVisibleMs: 1500, displayMs: 11000 };
@@ -105,6 +106,9 @@ export function createChannel(spec, ownerId) {
     save();
     return existing;
   }
+  if (countLanes(ownerId) >= LIMITS.maxLanesPerOwner) {
+    throw httpErr(403, `lane cap reached (max ${LIMITS.maxLanesPerOwner} per owner)`);
+  }
   const ch = {
     id,
     title: str(spec.title || id, 80),
@@ -168,7 +172,10 @@ export function pushItem(channelId, raw, ownerId) {
     // re-push of something already seen doesn't nag the consumer again.
     Object.assign(dup, pick(item, ["title", "body", "url", "imageUrl", "kind", "priority", "class", "expiresAt", "repeat"]));
     save();
-    return { item: dup, deduped: true };
+    return { item: dup, deduped: true }; // upsert doesn't add a new item, so it never hits the cap
+  }
+  if (countItems(ownerId) >= LIMITS.maxItemsPerOwner) {
+    throw httpErr(403, `item cap reached (max ${LIMITS.maxItemsPerOwner} per owner)`);
   }
   pushItemRecord(item);
   return { item, deduped: false };
@@ -315,6 +322,21 @@ function decorate(it) {
     kind: it.kind, title: it.title, body: it.body, url: it.url, imageUrl: it.imageUrl,
     class: it.class, ts: it.createdAt,
   };
+}
+
+// --- caps (T-13) -----------------------------------------------------------
+export function countLanes(ownerId) {
+  let n = 0;
+  for (const c of Object.values(db.channels)) if (c.ownerId === ownerId) n++;
+  return n;
+}
+export function countItems(ownerId) {
+  let n = 0;
+  for (const it of Object.values(db.items)) {
+    const ch = db.channels[it.channelId];
+    if (ch && ch.ownerId === ownerId) n++;
+  }
+  return n;
 }
 
 export function stats(userId) {

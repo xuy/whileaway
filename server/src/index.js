@@ -157,54 +157,54 @@ app.get("/v1/feed/peek", wrap((req, res) => {
   res.json(item);
 }));
 app.post("/v1/feed/seen", wrap((req) => bus.markSeen(user(req), (req.body || {}).id || (req.body || {}).itemId)));
-app.get("/v1/feed/history", wrap((req) => ({ items: bus.history(user(req), Number(req.query.limit) || 50) })));
+app.get("/v1/feed/history", wrap((req) => ({ cards: bus.history(user(req), Number(req.query.limit) || 50) })));
 
-// ---- consumer: channels + subscriptions (directory) ----------------------
-app.get("/v1/channels", wrap((req) => ({ channels: bus.listChannels(user(req)) })));
+// ---- consumer: lanes + subscriptions (directory) -------------------------
+app.get("/v1/lanes", wrap((req) => ({ lanes: bus.listLanes(user(req)) })));
 app.post("/v1/subscriptions", wrap((req) => {
-  const u = user(req); const { channelId, action } = req.body || {};
-  if (action === "unsubscribe") return { channels: bus.unsubscribe(u, channelId) };
-  if (action === "mute") return { channels: bus.setMuted(u, channelId, true) };
-  if (action === "unmute") return { channels: bus.setMuted(u, channelId, false) };
-  return { channels: bus.subscribe(u, channelId) };
+  const u = user(req); const { laneId, action } = req.body || {};
+  if (action === "unsubscribe") return { lanes: bus.unsubscribe(u, laneId) };
+  if (action === "mute") return { lanes: bus.setMuted(u, laneId, true) };
+  if (action === "unmute") return { lanes: bus.setMuted(u, laneId, false) };
+  return { lanes: bus.subscribe(u, laneId) };
 }));
 
-// ---- producer: channels + item push --------------------------------------
-app.post("/v1/channels", publisher, wrap((req) => {
+// ---- producer: lanes + card push -----------------------------------------
+app.post("/v1/lanes", publisher, wrap((req) => {
   if (!bus.hasScope(req.auth.scopes, "create:lane")) {
     const e = new Error("token lacks create:lane scope"); e.status = 403; throw e;
   }
-  const channel = bus.createChannel(req.body || {}, req.ownerId); // auto-subscribes the owner
+  const lane = bus.createLane(req.body || {}, req.ownerId); // auto-subscribes the owner
   // Also subscribe the token's CONSUMER identity when it differs from the owner (the self-host
   // boot key is userId=local / ownerId=owner_default), so the same token that creates a lane also
   // receives its cards in the feed.
   if (req.auth.userId && req.auth.userId !== req.ownerId) {
-    bus.ensureUser(req.auth.userId); // seed public subs first (see createChannel) — avoid a partial record
-    bus.subscribe(req.auth.userId, channel.id, { force: true });
+    bus.ensureUser(req.auth.userId); // seed public subs first (see createLane) — avoid a partial record
+    bus.subscribe(req.auth.userId, lane.id, { force: true });
   }
-  return { channel };
+  return { lane };
 }));
-app.get("/v1/channels/:id", wrap((req) => {
+app.get("/v1/lanes/:id", wrap((req) => {
   const notFound = () => { const e = new Error("not found"); e.status = 404; throw e; };
   // Hosted: authenticate BEFORE any lookup so unauth callers always get 401 (never a 404-vs-401
   // oracle that would let them enumerate private lane ids), then gate on visibility.
   if (AUTH_MODE === "hosted") {
     const u = user(req); // 401s without a valid read token
     const auth = bus.resolveToken(bearer(req)); // owner may differ from consumer userId
-    if (!bus.channelVisibleTo(u, req.params.id, auth && auth.ownerId)) notFound();
+    if (!bus.laneVisibleTo(u, req.params.id, auth && auth.ownerId)) notFound();
   }
   // Self-host ("none") is a single trust domain — keep today's behavior (metadata by id).
-  const c = bus.getChannel(req.params.id);
+  const c = bus.getLane(req.params.id);
   if (!c) notFound();
-  return { channel: { id: c.id, title: c.title, description: c.description, accent: c.accent, kind: c.kind, visibility: c.visibility } };
+  return { lane: { id: c.id, title: c.title, description: c.description, accent: c.accent, kind: c.kind, visibility: c.visibility } };
 }));
-app.post("/v1/channels/:id/items", publisher, wrap((req, res) => {
+app.post("/v1/lanes/:id/cards", publisher, wrap((req, res) => {
   enforceRate(res, "push:" + bearer(req), LIMITS.pushPerMin);
   if (!bus.hasScope(req.auth.scopes, "push:lane/" + req.params.id)) {
     const e = new Error("token not scoped to push to this lane"); e.status = 403; throw e;
   }
-  const { item, deduped } = bus.pushItem(req.params.id, req.body || {}, req.ownerId);
-  return { id: item.id, deduped };
+  const { item: card, deduped } = bus.pushCard(req.params.id, req.body || {}, req.ownerId);
+  return { id: card.id, deduped };
 }));
 // Convenience: mint an additional publisher key for the authenticated owner. The new key
 // inherits the CALLER's scopes (never more) so a narrow lane-scoped token can't exchange itself
@@ -222,7 +222,7 @@ app.get("/v1/me", async (req, res) => {
   bus.ensureOwner(uid, s.user.email || s.user.name || uid); // idempotent — signup hook already ran
   res.json({
     user: { id: uid, email: s.user.email, name: s.user.name },
-    lanes: bus.listChannels(uid),
+    lanes: bus.listLanes(uid),
     tokens: bus.listKeys(uid),
   });
 });

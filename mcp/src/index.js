@@ -46,7 +46,7 @@ server.registerTool(
   {
     title: "Push one card",
     description: [
-      "Push a single card to a whileaway lane (a private channel). The lane is created if it doesn't exist.",
+      "Push a single card to a whileaway lane (a private division of your feed that you own). The lane is created if it doesn't exist.",
       "",
       "Delivery semantics you control:",
       "- class `ambient` (default): shown once, then retires. Use for one-off items.",
@@ -107,7 +107,7 @@ server.registerTool(
   {
     title: "Create a lane",
     description: [
-      "Create (or update) a lane — a private channel you own. Usually you don't need this: push_card/push_deck auto-create a lane. Use it to set a lane's title, description, kind, or visibility up front.",
+      "Create (or update) a lane — a private division of your feed you own. Usually you don't need this: push_card/push_deck auto-create a lane. Use it to set a lane's title, description, kind, or visibility up front.",
       "Visibility: `private` (only you, default), `unlisted`, or `public` (appears in the shared directory).",
       "",
       "Examples:",

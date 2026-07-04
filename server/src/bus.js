@@ -1,10 +1,10 @@
-// The bus: channels, item push (with delivery semantics), subscriptions, and the delivery
+// The bus: lanes, card push (with delivery semantics), subscriptions, and the delivery
 // engine that decides the single best card to show a consumer right now. No external content
-// is fetched here — items only ever arrive by being PUSHED to a channel. The default content
-// you see exists because we own those channels and run reference pushers against this same API.
+// is fetched here — cards only ever arrive by being PUSHED to a lane. The default content
+// you see exists because we own those lanes and run reference pushers against this same API.
 import crypto from "node:crypto";
 import {
-  db, save, load, deliveryKey, getSubs, pushItemRecord, findByDedupe, addHistory,
+  db, save, load, deliveryKey, getSubs, pushCardRecord, findByDedupe, addHistory,
 } from "./store.js";
 import { LIMITS } from "./ratelimit.js";
 import { bump } from "./metrics.js";
@@ -110,18 +110,18 @@ export function setKeyIdentity(key, { userId, scopes } = {}) {
   save();
 }
 
-// --- channels --------------------------------------------------------------
+// --- lanes -----------------------------------------------------------------
 // Lanes are namespaced PER OWNER: the stored global id is `${ownerId}:${slug}` (see the namespace
 // model — a flat handle namespace sits on top later, owner-scoped slugs underneath). So two owners
 // can each hold a `personal`/`spanish` lane without colliding, and producers address their own
 // lanes by bare slug.
 export function laneId(ownerId, ref) { return ownerId + ":" + slugify(ref); }
 
-export function createChannel(spec, ownerId) {
+export function createLane(spec, ownerId) {
   const slug = slugify(spec.id || spec.slug || spec.title);
-  if (!slug) throw httpErr(400, "channel needs a title or slug");
+  if (!slug) throw httpErr(400, "lane needs a title or slug");
   const id = ownerId + ":" + slug;
-  const existing = db.channels[id];
+  const existing = db.lanes[id];
   if (existing) {
     Object.assign(existing, pick(spec, ["title", "description", "icon", "accent", "kind", "visibility"]));
     save();
@@ -142,7 +142,7 @@ export function createChannel(spec, ownerId) {
     visibility: ["private", "unlisted", "public"].includes(spec.visibility) ? spec.visibility : "private",
     createdAt: new Date().toISOString(),
   };
-  db.channels[id] = ch;
+  db.lanes[id] = ch;
   // Seed the owner's public/default subscriptions FIRST (ensureUser no-ops if they already have a
   // subs record). Doing this before the force-subscribe below avoids creating a partial subs
   // record that would make a later ensureUser() early-return and skip public-channel seeding.
@@ -155,24 +155,24 @@ export function createChannel(spec, ownerId) {
   return ch;
 }
 
-export function getChannel(id) { return db.channels[id] || null; }
+export function getLane(id) { return db.lanes[id] || null; }
 
-// Is this channel visible to this requester? Public channels are visible to everyone; private/
+// Is this lane visible to this requester? Public lanes are visible to everyone; private/
 // unlisted ones only to the owner or a subscriber. `ownerId` is the requesting token's owner —
 // passed separately because a token's (userId, ownerId) can legitimately differ (spec §3 rule 1),
 // and the owner must see their own lane even when its consumer userId isn't subscribed.
-export function channelVisibleTo(userId, id, ownerId = null) {
-  const c = db.channels[id];
+export function laneVisibleTo(userId, id, ownerId = null) {
+  const c = db.lanes[id];
   if (!c) return false;
   if (c.visibility === "public") return true;
   if (c.ownerId === userId || (ownerId && c.ownerId === ownerId)) return true;
   return !!getSubs(userId)[id];
 }
 
-// Channels visible to a user: public ones, plus any they own or are subscribed to.
-export function listChannels(userId) {
+// Lanes visible to a user: public ones, plus any they own or are subscribed to.
+export function listLanes(userId) {
   const subs = getSubs(userId);
-  return Object.values(db.channels)
+  return Object.values(db.lanes)
     .filter((c) => c.visibility === "public" || c.ownerId === userId || subs[c.id])
     .map((c) => ({
       id: c.id, slug: c.slug, title: c.title, description: c.description, icon: c.icon, accent: c.accent,
@@ -181,16 +181,16 @@ export function listChannels(userId) {
     }));
 }
 
-// --- items / push ----------------------------------------------------------
+// --- cards / push ----------------------------------------------------------
 // `ref` is an owner-scoped slug (or lane name); it resolves within the caller's own namespace, so
 // ownership holds by construction — you can only ever push to your own lanes.
-export function pushItem(ref, raw, ownerId) {
-  const channelId = ownerId + ":" + slugify(ref);
-  const ch = db.channels[channelId];
-  if (!ch) throw httpErr(404, "no such channel");
-  const item = normalizeItem(raw, ch);
+export function pushCard(ref, raw, ownerId) {
+  const lid = ownerId + ":" + slugify(ref);
+  const ch = db.lanes[lid];
+  if (!ch) throw httpErr(404, "no such lane");
+  const item = normalizeCard(raw, ch);
 
-  const dup = findByDedupe(channelId, item.dedupeKey);
+  const dup = findByDedupe(lid, item.dedupeKey);
   if (dup) {
     // Upsert: refresh content in place, keep id/createdAt and existing delivery state so a
     // re-push of something already seen doesn't nag the consumer again.
@@ -198,20 +198,20 @@ export function pushItem(ref, raw, ownerId) {
     save();
     return { item: dup, deduped: true }; // upsert doesn't add a new item, so it never hits the cap
   }
-  if (countItems(ownerId) >= LIMITS.maxItemsPerOwner) {
-    throw httpErr(403, `item cap reached (max ${LIMITS.maxItemsPerOwner} per owner)`);
+  if (countCards(ownerId) >= LIMITS.maxCardsPerOwner) {
+    throw httpErr(403, `card cap reached (max ${LIMITS.maxCardsPerOwner} per owner)`);
   }
-  pushItemRecord(item);
+  pushCardRecord(item);
   bump("pushes"); // new items only; dedupe upserts returned above (T-63)
   return { item, deduped: false };
 }
 
-function normalizeItem(raw, ch) {
-  if (!raw || typeof raw !== "object" || !str(raw.title, 1)) throw httpErr(400, "item needs a title");
+function normalizeCard(raw, ch) {
+  if (!raw || typeof raw !== "object" || !str(raw.title, 1)) throw httpErr(400, "card needs a title");
   const d = raw.delivery || {};
   return {
-    id: "itm_" + crypto.randomUUID(),
-    channelId: ch.id,
+    id: "card_" + crypto.randomUUID(),
+    laneId: ch.id,
     title: str(raw.title, 300),
     body: str(raw.body || "", 1000),
     url: safeUrl(raw.url),
@@ -232,41 +232,41 @@ function normalizeRepeat(r) {
 
 // --- users -----------------------------------------------------------------
 // First time we see a consumer id, give them their own subscription set seeded with the PUBLIC
-// channels so their feed isn't empty. Private channels are never auto-added. Idempotent: once a
+// lanes so their feed isn't empty. Private lanes are never auto-added. Idempotent: once a
 // user has a subscription record (even after unsubscribing from everything), we leave it alone.
 export function ensureUser(userId) {
   if (db.subs[userId]) return;
   db.subs[userId] = {};
-  for (const c of Object.values(db.channels)) {
+  for (const c of Object.values(db.lanes)) {
     if (c.visibility === "public") db.subs[userId][c.id] = { muted: false, createdAt: new Date().toISOString() };
   }
   save();
 }
 
 // --- subscriptions ---------------------------------------------------------
-export function subscribe(userId, channelId, opts = {}) {
-  const ch = db.channels[channelId];
-  if (!ch) throw httpErr(404, "no such channel");
-  // You may subscribe to public/unlisted channels, or private ones you own. `force` is for
+export function subscribe(userId, laneId, opts = {}) {
+  const ch = db.lanes[laneId];
+  if (!ch) throw httpErr(404, "no such lane");
+  // You may subscribe to public/unlisted lanes, or private ones you own. `force` is for
   // internal seeding (bootstrap) only — the HTTP route never sets it, so a stranger can't join
-  // someone else's private channel.
+  // someone else's private lane.
   if (!opts.force && ch.visibility === "private" && ch.ownerId !== userId) {
-    throw httpErr(403, "cannot subscribe to a private channel");
+    throw httpErr(403, "cannot subscribe to a private lane");
   }
   const subs = getSubs(userId);
-  if (!subs[channelId]) subs[channelId] = { muted: false, createdAt: new Date().toISOString() };
+  if (!subs[laneId]) subs[laneId] = { muted: false, createdAt: new Date().toISOString() };
   save();
-  return listChannels(userId);
+  return listLanes(userId);
 }
-export function unsubscribe(userId, channelId) {
-  delete getSubs(userId)[channelId];
+export function unsubscribe(userId, laneId) {
+  delete getSubs(userId)[laneId];
   save();
-  return listChannels(userId);
+  return listLanes(userId);
 }
-export function setMuted(userId, channelId, muted) {
+export function setMuted(userId, laneId, muted) {
   const subs = getSubs(userId);
-  if (subs[channelId]) { subs[channelId].muted = !!muted; save(); }
-  return listChannels(userId);
+  if (subs[laneId]) { subs[laneId].muted = !!muted; save(); }
+  return listLanes(userId);
 }
 
 // --- delivery engine -------------------------------------------------------
@@ -275,11 +275,11 @@ export function setMuted(userId, channelId, muted) {
 function selectNext(userId, now) {
   const subs = getSubs(userId);
   const eligible = [];
-  for (const [channelId, sub] of Object.entries(subs)) {
+  for (const [laneId, sub] of Object.entries(subs)) {
     if (sub.muted) continue;
-    const list = db.itemsByChannel[channelId] || [];
+    const list = db.cardsByLane[laneId] || [];
     for (const id of list) {
-      const it = db.items[id];
+      const it = db.cards[id];
       if (!it) continue;
       if (it.expiresAt && new Date(it.expiresAt).getTime() < now) continue; // expired → drop
       const st = db.delivery[deliveryKey(userId, id)];
@@ -295,9 +295,9 @@ function selectNext(userId, now) {
     b.priority - a.priority ||
     new Date(b.createdAt) - new Date(a.createdAt));
 
-  // Round-robin fairness: avoid serving the same channel twice in a row when alternatives exist.
-  const last = db.cursor[userId] && db.cursor[userId].lastChannelId;
-  return eligible.find((it) => it.channelId !== last) || eligible[0];
+  // Round-robin fairness: avoid serving the same lane twice in a row when alternatives exist.
+  const last = db.cursor[userId] && db.cursor[userId].lastLaneId;
+  return eligible.find((it) => it.laneId !== last) || eligible[0];
 }
 
 // Read-only: the card next() WOULD deliver, without consuming it. Used for the extension's
@@ -316,7 +316,7 @@ export function next(userId) {
   const st = db.delivery[dk] || (db.delivery[dk] = { deliveredCount: 0, lastDeliveredAt: null, seenAt: null });
   st.deliveredCount++;
   st.lastDeliveredAt = new Date().toISOString();
-  (db.cursor[userId] || (db.cursor[userId] = {})).lastChannelId = chosen.channelId;
+  (db.cursor[userId] || (db.cursor[userId] = {})).lastLaneId = chosen.laneId;
   save();
   bump("deliveries"); // total impressions; the seen-rate denominator is derived per-card (T-63)
   return decorate(chosen);
@@ -336,9 +336,9 @@ function isEligible(it, st, now) {
   return false;
 }
 
-export function markSeen(userId, itemId) {
-  const it = db.items[itemId];
-  const dk = deliveryKey(userId, itemId);
+export function markSeen(userId, cardId) {
+  const it = db.cards[cardId];
+  const dk = deliveryKey(userId, cardId);
   const st = db.delivery[dk] || (db.delivery[dk] = { deliveredCount: 1, lastDeliveredAt: new Date().toISOString(), seenAt: null });
   if (!st.seenAt) {
     st.seenAt = new Date().toISOString();
@@ -353,12 +353,12 @@ export function history(userId, limit = 50) {
   return (db.history[userId] || []).slice(0, limit);
 }
 
-// Attach channel display info (label/accent) so the client doesn't need a second lookup.
+// Attach lane display info (label/accent) so the client doesn't need a second lookup.
 function decorate(it) {
-  const ch = db.channels[it.channelId] || {};
+  const ch = db.lanes[it.laneId] || {};
   return {
-    id: it.id, channelId: it.channelId,
-    sourceLabel: ch.title || it.channelId, accent: ch.accent || "#3a86ff",
+    id: it.id, laneId: it.laneId,
+    sourceLabel: ch.title || it.laneId, accent: ch.accent || "#3a86ff",
     kind: it.kind, title: it.title, body: it.body, url: it.url, imageUrl: it.imageUrl,
     class: it.class, ts: it.createdAt,
   };
@@ -367,13 +367,13 @@ function decorate(it) {
 // --- caps (T-13) -----------------------------------------------------------
 export function countLanes(ownerId) {
   let n = 0;
-  for (const c of Object.values(db.channels)) if (c.ownerId === ownerId) n++;
+  for (const c of Object.values(db.lanes)) if (c.ownerId === ownerId) n++;
   return n;
 }
-export function countItems(ownerId) {
+export function countCards(ownerId) {
   let n = 0;
-  for (const it of Object.values(db.items)) {
-    const ch = db.channels[it.channelId];
+  for (const it of Object.values(db.cards)) {
+    const ch = db.lanes[it.laneId];
     if (ch && ch.ownerId === ownerId) n++;
   }
   return n;
@@ -382,8 +382,8 @@ export function countItems(ownerId) {
 export function stats(userId) {
   const subs = getSubs(userId);
   return {
-    channels: Object.keys(db.channels).length,
-    items: Object.keys(db.items).length,
+    lanes: Object.keys(db.lanes).length,
+    cards: Object.keys(db.cards).length,
     subscriptions: Object.keys(subs).length,
     history: (db.history[userId] || []).length,
   };

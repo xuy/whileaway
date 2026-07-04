@@ -8,7 +8,7 @@ The hosted instance runs on Fly.io. Live: **https://whileaway-bus.fly.dev**
 - **One always-on machine** (`min_machines_running = 1`, `auto_stop_machines = "off"`).
   Cold starts would break the product — the feed must answer instantly.
 - **Persistent volume** `whileaway_data` mounted at `/data`, holding BOTH sqlite DBs:
-  - `WHILEAWAY_STATE=/data/whileaway.db` — the bus store (owners, lanes, items, delivery, metrics).
+  - `WHILEAWAY_STATE=/data/whileaway.db` — the bus store (owners, lanes, cards, delivery, metrics).
   - `WHILEAWAY_AUTH_DB=/data/whileaway-auth.db` — Better Auth's own tables (users, sessions).
 - **`AUTH_MODE=hosted`** — token-only identity for producers/consumers; magic-link sessions for the
   dashboard.
@@ -58,14 +58,14 @@ fly logs --app whileaway-bus                             # boot + magic-link lin
 
 Full signup→seen E2E: POST `/api/auth/sign-in/magic-link` with an email, read the verify URL from
 `fly logs` (until an email transport is configured), GET it with a cookie jar to set the session,
-then `POST /v1/tokens` → `POST /v1/channels/personal/items` → `GET /v1/feed/next` → `POST /v1/feed/seen`.
+then `POST /v1/tokens` → `POST /v1/lanes/personal/cards` → `GET /v1/feed/next` → `POST /v1/feed/seen`.
 
 ## Metrics (the launch number)
 
 `GET /v1/metrics` (ops token in hosted; open in self-host). Headline is **`seenRate`** —
-`seenCards / deliveredCards`, counted per distinct (user, item) so re-surfaced must_see/recurring
+`seenCards / deliveredCards`, counted per distinct (user, card) so re-surfaced must_see/recurring
 cards aren't double-counted. Also: `signups`, `tokensMinted`, `pushes`, `deliveries` (impressions),
-`activatedUsers`, `seenUsers`, and current gauges (`owners`, `liveTokens`, `lanes`, `items`).
+`activatedUsers`, `seenUsers`, and current gauges (`owners`, `liveTokens`, `lanes`, `cards`).
 
 ## Pending (human-assisted)
 

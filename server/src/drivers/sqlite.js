@@ -1,12 +1,12 @@
 // SQLite storage driver (hosted). Implements the same { load(): object, save(db): void } seam as
 // JsonDriver, but each top-level collection becomes a table of (k TEXT PRIMARY KEY, v JSON TEXT),
-// so items/channels/etc. are real rows rather than one giant blob. save() replaces all rows in a
+// so cards/lanes/etc. are real rows rather than one giant blob. save() replaces all rows in a
 // single transaction — cheap for v0 scale and debounced by store.save().
 import Database from "better-sqlite3";
 import path from "node:path";
 
 // The db shape's top-level maps (see store.js). Each is persisted as its own table.
-const COLLECTIONS = ["owners", "keys", "channels", "items", "itemsByChannel", "subs", "delivery", "history", "cursor", "metrics"];
+const COLLECTIONS = ["owners", "keys", "lanes", "cards", "cardsByLane", "subs", "delivery", "history", "cursor", "metrics"];
 
 export class SqliteDriver {
   constructor(file = process.env.WHILEAWAY_STATE || path.join(process.cwd(), ".whileaway.db")) {

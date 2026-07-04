@@ -84,8 +84,8 @@ async function loadHistory() {
   const box = $("history");
   const r = await apiGet("/v1/feed/history?limit=15");
   if (r.status === 401) { box.innerHTML = '<div class="empty">Token not accepted — generate a fresh one above.</div>'; return; }
-  if (!r.ok) { box.innerHTML = '<div class="empty">Bus offline.</div>'; return; }
-  const items = (r.body && r.body.items) || [];
+  if (!r.ok) { box.innerHTML = '<div class="empty">Feed disconnected.</div>'; return; }
+  const items = (r.body && r.body.cards) || [];
   if (!items.length) {
     box.innerHTML = '<div class="empty">No cards seen yet. Tell your agent to push one — e.g. <code>push me one stoic quote each morning</code> — or install the extension and open an AI chat. New cards show here.</div>';
     return;
@@ -96,9 +96,9 @@ async function loadHistory() {
 // ---------- lanes (list + mute only) ----------
 async function loadLanes() {
   const box = $("lanes");
-  const r = await apiGet("/v1/channels");
-  if (!r.ok) { box.innerHTML = '<div class="empty">Bus offline.</div>'; return; }
-  const lanes = (r.body && r.body.channels) || [];
+  const r = await apiGet("/v1/lanes");
+  if (!r.ok) { box.innerHTML = '<div class="empty">Feed disconnected.</div>'; return; }
+  const lanes = (r.body && r.body.lanes) || [];
   if (!lanes.length) { box.innerHTML = '<div class="empty">No lanes yet.</div>'; return; }
   box.innerHTML = "";
   for (const c of lanes) {
@@ -111,14 +111,14 @@ async function loadLanes() {
     const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!c.subscribed;
     const sl = document.createElement("span"); sl.className = "slider";
     cb.addEventListener("change", async () => {
-      const r2 = await apiPost("/v1/subscriptions", { channelId: c.id, action: cb.checked ? "subscribe" : "unsubscribe" });
+      const r2 = await apiPost("/v1/subscriptions", { laneId: c.id, action: cb.checked ? "subscribe" : "unsubscribe" });
       if (r2.ok) loadLanes(); else { cb.checked = !cb.checked; toast(r2.body && r2.body.error || "error", true); }
     });
     sw.appendChild(cb); sw.appendChild(sl);
     row.appendChild(sw);
     const ml = row.querySelector(".mutelink");
     if (ml) ml.addEventListener("click", async () => {
-      const r2 = await apiPost("/v1/subscriptions", { channelId: c.id, action: c.muted ? "unmute" : "mute" });
+      const r2 = await apiPost("/v1/subscriptions", { laneId: c.id, action: c.muted ? "unmute" : "mute" });
       if (r2.ok) loadLanes(); else toast(r2.body && r2.body.error || "error", true);
     });
     box.appendChild(row);

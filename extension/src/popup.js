@@ -53,7 +53,7 @@ async function refreshStatus() {
   try {
     const h = await get("/health");
     $("pill").className = "pill ok";
-    $("statusText").textContent = `connected · ${h.items} items · ${h.subscriptions} subs`;
+    $("statusText").textContent = `connected · ${h.cards} cards · ${h.subscriptions} subs`;
     connected = true;
   } catch (_) {
     $("pill").className = "pill bad";
@@ -91,10 +91,10 @@ async function doPreview() {
 async function loadChannels() {
   const box = $("channels");
   try {
-    const d = await get("/v1/channels");
+    const d = await get("/v1/lanes");
     box.textContent = "";
-    if (!d.channels.length) { box.innerHTML = '<div class="muted">no channels yet</div>'; return; }
-    for (const c of d.channels) {
+    if (!d.lanes.length) { box.innerHTML = '<div class="muted">no lanes yet</div>'; return; }
+    for (const c of d.lanes) {
       const row = document.createElement("div");
       row.className = "src";
       const lbl = document.createElement("div");
@@ -109,7 +109,7 @@ async function loadChannels() {
       const sl = document.createElement("span");
       sl.className = "slider";
       cb.addEventListener("change", async () => {
-        try { await post("/v1/subscriptions", { channelId: c.id, action: cb.checked ? "subscribe" : "unsubscribe" }); loadChannels(); refreshStatus(); }
+        try { await post("/v1/subscriptions", { laneId: c.id, action: cb.checked ? "subscribe" : "unsubscribe" }); loadChannels(); refreshStatus(); }
         catch (_) { cb.checked = !cb.checked; }
       });
       sw.appendChild(cb); sw.appendChild(sl);
@@ -117,20 +117,20 @@ async function loadChannels() {
       const mlink = lbl.querySelector(".mutelink");
       if (mlink) mlink.addEventListener("click", async (e) => {
         e.preventDefault();
-        try { await post("/v1/subscriptions", { channelId: c.id, action: c.muted ? "unmute" : "mute" }); loadChannels(); }
+        try { await post("/v1/subscriptions", { laneId: c.id, action: c.muted ? "unmute" : "mute" }); loadChannels(); }
         catch (_) {}
       });
       box.appendChild(row);
     }
   } catch (_) {
-    box.innerHTML = '<div class="muted">backend offline</div>';
+    box.innerHTML = '<div class="muted">feed disconnected</div>';
   }
 }
 
 function renderPreview(item) {
   const box = $("preview");
   box.style.display = "block";
-  if (!item) { box.innerHTML = '<div class="muted">nothing right now — subscribe to a channel</div>'; return; }
+  if (!item) { box.innerHTML = '<div class="muted">nothing right now — subscribe to a lane</div>'; return; }
   const accent = item.accent || ACCENT[item.kind] || "#3a86ff";
   const img = item.imageUrl ? `<img src="${item.imageUrl}" referrerpolicy="no-referrer" onerror="this.remove()"/>` : "";
   box.innerHTML = `
@@ -149,16 +149,16 @@ async function loadHistory() {
   const box = $("history");
   try {
     const d = await get("/v1/feed/history?limit=20");
-    if (!d.items.length) { box.innerHTML = '<div class="muted">nothing yet</div>'; return; }
+    if (!d.cards.length) { box.innerHTML = '<div class="muted">nothing yet</div>'; return; }
     box.textContent = "";
-    for (const it of d.items) {
+    for (const it of d.cards) {
       const row = document.createElement("div");
       row.className = "hitem";
       row.innerHTML = `<span class="hsrc">${escape_(it.sourceLabel || it.source)}</span> ${escape_(it.title || "")} <span class="hwhen">· ${timeAgo(it.seenAt)}</span>`;
       box.appendChild(row);
     }
   } catch (_) {
-    box.innerHTML = '<div class="muted">backend offline</div>';
+    box.innerHTML = '<div class="muted">feed disconnected</div>';
   }
 }
 

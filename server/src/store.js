@@ -1,7 +1,7 @@
 // In-memory working set with pluggable persistence. The `db` shape is what matters; the actual
 // load/save is delegated to a storage DRIVER selected by WHILEAWAY_STORE (json = self-host
 // default; sqlite lands in T-11). Everything the bus needs lives here: owners, publisher keys
-// (hashed), channels, items, per-user subscriptions, per-user delivery state, per-user history.
+// (hashed), lanes, cards, per-user subscriptions, per-user delivery state, per-user history.
 import { JsonDriver } from "./drivers/json.js";
 import { SqliteDriver } from "./drivers/sqlite.js";
 
@@ -19,17 +19,17 @@ const driver = selectDriver();
 export const db = {
   owners: {}, // ownerId -> { id, label }
   keys: {}, // sha256(key) -> { id, ownerId, label, createdAt }
-  channels: {}, // channelId(slug) -> { id, title, description, icon, accent, kind, ownerId, visibility, createdAt }
-  items: {}, // itemId -> item (see bus.normalizeItem)
-  itemsByChannel: {}, // channelId -> [itemId, ...] (newest last)
-  subs: {}, // userId -> { channelId -> { muted, createdAt } }
-  delivery: {}, // `${userId}|${itemId}` -> { deliveredCount, lastDeliveredAt, seenAt }
-  history: {}, // userId -> [ {item snapshot, seenAt}, ... ] newest first
-  cursor: {}, // userId -> { lastChannelId }  (for round-robin fairness)
+  lanes: {}, // laneId (ownerId:slug) -> { id, slug, title, description, icon, accent, kind, ownerId, visibility, createdAt }
+  cards: {}, // cardId -> card (see bus.normalizeCard)
+  cardsByLane: {}, // laneId -> [cardId, ...] (newest last)
+  subs: {}, // userId -> { laneId -> { muted, createdAt } }
+  delivery: {}, // `${userId}|${cardId}` -> { deliveredCount, lastDeliveredAt, seenAt }
+  history: {}, // userId -> [ {card snapshot, seenAt}, ... ] newest first
+  cursor: {}, // userId -> { lastLaneId }  (for round-robin fairness)
   metrics: {}, // counterName -> integer (activation/seen-rate counters, T-63)
 };
 
-const MAX_ITEMS_PER_CHANNEL = 250;
+const MAX_CARDS_PER_LANE = 250;
 const MAX_HISTORY = 200;
 
 export function load() {
@@ -68,23 +68,23 @@ export function getSubs(userId) {
   return db.subs[userId] || (db.subs[userId] = {});
 }
 
-export function pushItemRecord(item) {
-  db.items[item.id] = item;
-  const list = db.itemsByChannel[item.channelId] || (db.itemsByChannel[item.channelId] = []);
+export function pushCardRecord(item) {
+  db.cards[item.id] = item;
+  const list = db.cardsByLane[item.laneId] || (db.cardsByLane[item.laneId] = []);
   if (!list.includes(item.id)) list.push(item.id);
   // trim oldest, dropping their item records + delivery state would be ideal; keep simple: cap list.
-  if (list.length > MAX_ITEMS_PER_CHANNEL) {
-    const dropped = list.splice(0, list.length - MAX_ITEMS_PER_CHANNEL);
-    for (const id of dropped) delete db.items[id];
+  if (list.length > MAX_CARDS_PER_LANE) {
+    const dropped = list.splice(0, list.length - MAX_CARDS_PER_LANE);
+    for (const id of dropped) delete db.cards[id];
   }
   save();
 }
 
-export function findByDedupe(channelId, dedupeKey) {
+export function findByDedupe(laneId, dedupeKey) {
   if (!dedupeKey) return null;
-  const list = db.itemsByChannel[channelId] || [];
+  const list = db.cardsByLane[laneId] || [];
   for (const id of list) {
-    const it = db.items[id];
+    const it = db.cards[id];
     if (it && it.dedupeKey === dedupeKey) return it;
   }
   return null;

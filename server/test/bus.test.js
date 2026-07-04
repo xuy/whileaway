@@ -11,16 +11,16 @@ const OWNER = "owner_test";
 
 // Owner + one channel + an auto-subscribed consumer. Public channels are auto-added to any new
 // consumer by ensureUser, matching how a real browser id first hits the bus.
-function setup({ visibility = "public", channelId = "c1" } = {}) {
+function setup({ visibility = "public", laneId = "c1" } = {}) {
   reset();
   bus.ensureOwner(OWNER, "test owner");
-  bus.createChannel({ id: channelId, title: channelId.toUpperCase(), visibility }, OWNER);
+  bus.createLane({ id: laneId, title: laneId.toUpperCase(), visibility }, OWNER);
   bus.ensureUser("u1");
-  return channelId;
+  return laneId;
 }
 
-function push(channelId, raw) {
-  return bus.pushItem(channelId, raw, OWNER);
+function push(laneId, raw) {
+  return bus.pushCard(laneId, raw, OWNER);
 }
 
 beforeEach(() => reset());
@@ -68,7 +68,7 @@ test("dedupe_key upserts in place instead of creating a second item", () => {
   assert.equal(b.deduped, true);
   assert.equal(b.item.id, a.item.id); // same record
   assert.equal(b.item.title, "v2"); // content refreshed in place
-  assert.equal(db.itemsByChannel[bus.laneId(OWNER, c)].length, 1); // only one item ever stored (global id)
+  assert.equal(db.cardsByLane[bus.laneId(OWNER, c)].length, 1); // only one item ever stored (global id)
 });
 
 // --- must_see re-surfaces until acknowledged --------------------------------
@@ -113,8 +113,8 @@ test("expired items are never delivered", () => {
 test("consecutive deliveries prefer a different channel", () => {
   reset();
   bus.ensureOwner(OWNER, "test owner");
-  bus.createChannel({ id: "c1", title: "C1", visibility: "public" }, OWNER);
-  bus.createChannel({ id: "c2", title: "C2", visibility: "public" }, OWNER);
+  bus.createLane({ id: "c1", title: "C1", visibility: "public" }, OWNER);
+  bus.createLane({ id: "c2", title: "C2", visibility: "public" }, OWNER);
   bus.ensureUser("u1"); // auto-subscribed to both public channels
   push("c1", { title: "from c1" });
   push("c2", { title: "from c2" });
@@ -122,14 +122,14 @@ test("consecutive deliveries prefer a different channel", () => {
   const first = bus.next("u1");
   const second = bus.next("u1");
   assert.ok(first && second);
-  assert.notEqual(first.channelId, second.channelId); // fairness: not the same lane twice
+  assert.notEqual(first.laneId, second.laneId); // fairness: not the same lane twice
 });
 
 // --- private-channel guard (spec §3: lanes are private by default) ----------
 test("a stranger cannot subscribe to someone else's private channel", () => {
   reset();
   bus.ensureOwner(OWNER, "test owner");
-  const secret = bus.createChannel({ id: "secret", title: "Secret", visibility: "private" }, OWNER);
+  const secret = bus.createLane({ id: "secret", title: "Secret", visibility: "private" }, OWNER);
   bus.ensureUser("stranger"); // gets no private channels
   assert.throws(() => bus.subscribe("stranger", secret.id), /private/);
 });
@@ -138,10 +138,10 @@ test("a stranger cannot subscribe to someone else's private channel", () => {
 test("creating a lane auto-subscribes the owner so their pushes reach their feed", () => {
   reset();
   bus.ensureOwner("acct", "account");
-  bus.createChannel({ id: "spanish", title: "Spanish", visibility: "private" }, "acct");
+  bus.createLane({ id: "spanish", title: "Spanish", visibility: "private" }, "acct");
   // No explicit subscribe — creation subscribed the owner. In hosted, userId === ownerId, so
   // "acct" is both producer and consumer and must see the card.
-  bus.pushItem("spanish", { title: "hola" }, "acct");
+  bus.pushCard("spanish", { title: "hola" }, "acct");
   const item = bus.next("acct");
   assert.ok(item, "owner should receive a card pushed to a lane they just created");
   assert.equal(item.title, "hola");
@@ -150,53 +150,53 @@ test("creating a lane auto-subscribes the owner so their pushes reach their feed
 test("creating a lane before first feed still seeds the owner's public subscriptions", () => {
   reset();
   bus.ensureOwner("sys", "system");
-  bus.createChannel({ id: "pub1", title: "Public", visibility: "public" }, "sys"); // a public lane exists
+  bus.createLane({ id: "pub1", title: "Public", visibility: "public" }, "sys"); // a public lane exists
   bus.ensureOwner("acct", "account");
-  bus.createChannel({ id: "mylane", title: "Mine", visibility: "private" }, "acct"); // acct creates a lane FIRST
-  const chans = bus.listChannels("acct");
+  bus.createLane({ id: "mylane", title: "Mine", visibility: "private" }, "acct"); // acct creates a lane FIRST
+  const chans = bus.listLanes("acct");
   // Owner-subscribe must not have short-circuited public seeding:
   assert.ok(chans.some((c) => c.slug === "pub1" && c.subscribed), "public channel should still be seeded");
   assert.ok(chans.some((c) => c.slug === "mylane" && c.subscribed), "own new lane is subscribed");
 });
 
 // --- single-channel visibility (no metadata leak by id) ---------------------
-test("channelVisibleTo: public to all, private only to owner or subscriber", () => {
+test("laneVisibleTo: public to all, private only to owner or subscriber", () => {
   reset();
   bus.ensureOwner(OWNER, "test owner");
-  const pub = bus.createChannel({ id: "pub", title: "Pub", visibility: "public" }, OWNER);
-  const priv = bus.createChannel({ id: "priv", title: "Priv", visibility: "private" }, OWNER);
+  const pub = bus.createLane({ id: "pub", title: "Pub", visibility: "public" }, OWNER);
+  const priv = bus.createLane({ id: "priv", title: "Priv", visibility: "private" }, OWNER);
   bus.ensureUser("stranger");
 
-  assert.ok(bus.channelVisibleTo("stranger", pub.id)); // public → visible
-  assert.ok(!bus.channelVisibleTo("stranger", priv.id)); // private → hidden from stranger
-  assert.ok(bus.channelVisibleTo(OWNER, priv.id)); // owner → visible
-  assert.ok(!bus.channelVisibleTo("stranger", bus.laneId(OWNER, "nope"))); // missing → not visible (no leak)
+  assert.ok(bus.laneVisibleTo("stranger", pub.id)); // public → visible
+  assert.ok(!bus.laneVisibleTo("stranger", priv.id)); // private → hidden from stranger
+  assert.ok(bus.laneVisibleTo(OWNER, priv.id)); // owner → visible
+  assert.ok(!bus.laneVisibleTo("stranger", bus.laneId(OWNER, "nope"))); // missing → not visible (no leak)
 
   bus.subscribe(OWNER, priv.id); // owner subscribes; a subscriber can see it too
-  assert.ok(bus.channelVisibleTo(OWNER, priv.id));
+  assert.ok(bus.laneVisibleTo(OWNER, priv.id));
 });
 
-test("channelVisibleTo: owner sees own lane via ownerId even when consumer userId differs", () => {
+test("laneVisibleTo: owner sees own lane via ownerId even when consumer userId differs", () => {
   reset();
   bus.ensureOwner("acct_owner", "owner");
-  const lane = bus.createChannel({ id: "lane", title: "Lane", visibility: "private" }, "acct_owner");
+  const lane = bus.createLane({ id: "lane", title: "Lane", visibility: "private" }, "acct_owner");
   // A token whose consumer userId ("consumerX") differs from its ownerId ("acct_owner") — the
   // owner must still see the lane it owns, even though consumerX never subscribed.
-  assert.ok(!bus.channelVisibleTo("consumerX", lane.id)); // no ownerId passed → hidden
-  assert.ok(bus.channelVisibleTo("consumerX", lane.id, "acct_owner")); // ownerId matches → visible
+  assert.ok(!bus.laneVisibleTo("consumerX", lane.id)); // no ownerId passed → hidden
+  assert.ok(bus.laneVisibleTo("consumerX", lane.id, "acct_owner")); // ownerId matches → visible
 });
 
 // --- per-owner namespacing (T-15) -------------------------------------------
 test("two owners can each hold a same-named lane without colliding", () => {
   reset();
   bus.ensureOwner("alice"); bus.ensureOwner("bob");
-  const a = bus.createChannel({ id: "spanish", title: "Alice's Spanish", visibility: "private" }, "alice");
-  const b = bus.createChannel({ id: "spanish", title: "Bob's Spanish", visibility: "private" }, "bob");
+  const a = bus.createLane({ id: "spanish", title: "Alice's Spanish", visibility: "private" }, "alice");
+  const b = bus.createLane({ id: "spanish", title: "Bob's Spanish", visibility: "private" }, "bob");
   assert.notEqual(a.id, b.id); // distinct global ids: alice:spanish vs bob:spanish
   assert.equal(a.slug, "spanish"); assert.equal(b.slug, "spanish");
 
-  bus.pushItem("spanish", { title: "hola from alice" }, "alice");
-  bus.pushItem("spanish", { title: "hola from bob" }, "bob");
+  bus.pushCard("spanish", { title: "hola from alice" }, "alice");
+  bus.pushCard("spanish", { title: "hola from bob" }, "bob");
 
   assert.equal(bus.next("alice").title, "hola from alice"); // each owner sees only their own lane
   assert.equal(bus.next("bob").title, "hola from bob");
@@ -207,7 +207,7 @@ test("you cannot push into another owner's lane — refs resolve within your own
   const c = setup(); // lane "c1" owned by OWNER
   // A different owner pushing "c1" resolves to `owner_other:c1`, which doesn't exist — so there's
   // no way to even address someone else's lane (stronger than the old cross-owner 403).
-  assert.throws(() => bus.pushItem(c, { title: "nope" }, "owner_other"), /no such channel/);
+  assert.throws(() => bus.pushCard(c, { title: "nope" }, "owner_other"), /no such lane/);
   // And OWNER's lane is untouched.
-  assert.equal((db.itemsByChannel[bus.laneId(OWNER, c)] || []).length, 0);
+  assert.equal((db.cardsByLane[bus.laneId(OWNER, c)] || []).length, 0);
 });

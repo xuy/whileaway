@@ -41,7 +41,7 @@ const socialProviders = (process.env.WHILEAWAY_GOOGLE_CLIENT_ID && process.env.W
 export function provisionUser(userId, label) {
   bus.ensureOwner(userId, label || userId);
   bus.ensureUser(userId); // seed public starter channels
-  bus.createChannel({ id: "personal", title: "Personal", visibility: "private", kind: "note" }, userId);
+  bus.createLane({ id: "personal", title: "Personal", visibility: "private", kind: "note" }, userId);
   bump("signups"); // top of the activation funnel (T-63)
 }
 

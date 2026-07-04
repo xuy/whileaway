@@ -39,13 +39,13 @@ export class WhileawayClient {
     if (visibility != null) body.visibility = visibility;
     if (icon != null) body.icon = icon;
     if (accent != null) body.accent = accent;
-    const { data } = await this._req("POST", "/v1/channels", body);
-    return data.channel;
+    const { data } = await this._req("POST", "/v1/lanes", body);
+    return data.lane;
   }
 
   async listLanes() {
-    const { data } = await this._req("GET", "/v1/channels");
-    return data.channels || [];
+    const { data } = await this._req("GET", "/v1/lanes");
+    return data.lanes || [];
   }
 
   // --- cards ---------------------------------------------------------------
@@ -67,8 +67,8 @@ export class WhileawayClient {
     return body;
   }
 
-  // Mirror the bus's channel slug rules so item paths match the stored lane id — otherwise a lane
-  // name like "Spanish Vocab" (stored as "spanish-vocab") would never match its item path.
+  // Mirror the bus's lane slug rules so card paths match the stored lane id — otherwise a lane
+  // name like "Spanish Vocab" (stored as "spanish-vocab") would never match its card path.
   laneId(lane) {
     return String(lane || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
   }
@@ -78,12 +78,12 @@ export class WhileawayClient {
   // and so we never re-send a fallback title that would silently rename an existing lane. Only a
   // genuine 404 (lane doesn't exist yet) triggers a create-then-retry, using the canonical id the
   // server returns.
-  async _pushItem(lane, body, laneOpts) {
+  async _pushCard(lane, body, laneOpts) {
     // Push by owner-scoped SLUG — the server resolves it within the caller's own namespace
     // (`ownerId:slug`). Client and server slugify identically, so the create-then-retry below
     // lands on the same lane.
     const slug = this.laneId(lane);
-    const path = `/v1/channels/${encodeURIComponent(slug)}/items`;
+    const path = `/v1/lanes/${encodeURIComponent(slug)}/cards`;
     try {
       return { data: (await this._req("POST", path, body)).data, laneId: slug };
     } catch (e) {
@@ -94,7 +94,7 @@ export class WhileawayClient {
   }
 
   async pushCard(card = {}) {
-    const { data, laneId } = await this._pushItem(card.lane || this.defaultLane, this.buildCardBody(card), card.laneOpts);
+    const { data, laneId } = await this._pushCard(card.lane || this.defaultLane, this.buildCardBody(card), card.laneOpts);
     return { id: data.id, deduped: !!data.deduped, lane: laneId };
   }
 
@@ -115,7 +115,7 @@ export class WhileawayClient {
     let laneId = this.laneId(target);
     for (const c of cards) {
       const merged = { ...shared, ...c }; // per-card fields win over the shared defaults
-      const res = await this._pushItem(target, this.buildCardBody(merged), laneOpts);
+      const res = await this._pushCard(target, this.buildCardBody(merged), laneOpts);
       laneId = res.laneId;
       items.push({ id: res.data.id, deduped: !!res.data.deduped });
     }
@@ -124,7 +124,7 @@ export class WhileawayClient {
 
   async getHistory(limit = 50) {
     const { data } = await this._req("GET", `/v1/feed/history?limit=${encodeURIComponent(limit)}`);
-    return data.items || [];
+    return data.cards || [];
   }
 
   // Best-effort status so an agent can avoid overflooding a lane. /v1/me lands in T-12; until then

@@ -49,17 +49,17 @@ to owned lanes; spec §3 rule 1 respected (no field merging in store).
 
 **T-11 · SQLite driver** — deps: T-02
 `better-sqlite3` implementation of the driver seam; migration script from a JSON state file;
-env-selected. *Accept:* full test suite passes on both drivers; 10k-item synthetic load survives
+env-selected. *Accept:* full test suite passes on both drivers; 10k-card synthetic load survives
 restart.
 
 **T-12 · Better Auth integration (hosted mode)** — deps: T-10
 Email magic link + Google sign-in, sessions for dashboard routes only. Signup hook: create
-owner+user, mint god-token, create "Personal" lane, subscribe to starter channels. New
+owner+user, mint god-token, create "Personal" lane, subscribe to starter lanes. New
 endpoints: `POST /v1/tokens` (mint/revoke, session-auth'd), `GET /v1/me`. *Accept:* fresh signup
 → `/v1/me` shows lane + token; `AUTH_MODE=none` untouched; no passwords stored anywhere.
 
 **T-13 · Rate limits + caps** — deps: T-10
-Per-token push limit, per-user pull limit, lane count cap, per-user item cap; 429 with
+Per-token push limit, per-user pull limit, lane count cap, per-user card cap; 429 with
 Retry-After. *Accept:* tests prove limits; normal single-user usage never trips them.
 
 **T-14 · Production deploy** — deps: T-11, T-12, T-13 · human-assisted (accounts, domain, DNS)
@@ -109,7 +109,7 @@ detection failures degrade silently (no console spam, no card).
 **T-40 · Dashboard** — deps: T-12
 Extend `server/public`: session login, token mint/revoke with copy buttons, MCP config snippet
 generator (Claude Code / Desktop / Cursor / raw JSON), lanes with mute toggles, recent history,
-starter-channel toggles. Plain HTML/JS like the existing console — no framework. *Accept:* the
+starter-lane toggles. Plain HTML/JS like the existing console — no framework. *Accept:* the
 spec §9 flow steps 1–3 complete in under 3 minutes using only the dashboard.
 
 **T-41 · Landing page + docs** — deps: T-40
@@ -119,7 +119,7 @@ cold reader can explain what whileaway does after 30 seconds on the page.
 
 ## WS5 — Content & examples
 
-**T-50 · Starter channels on hosted** — deps: T-14
+**T-50 · Starter lanes on hosted** — deps: T-14
 Run the existing reference pushers (wikipedia/HN/RSS) against the hosted bus on a schedule;
 new-user auto-subscribe (per spec §11: on by default, mute visible). *Accept:* a brand-new
 account sees a card on first prompt with zero producer setup.
@@ -161,6 +161,6 @@ onboarding confirmed; no P0s open.
 | 6 | T-51, T-60 |
 | 7 | T-61, T-62, buffer for Web Store review feedback |
 
-Web Store review is the only calendar item you don't control — everything else is ~a week of
+Web Store review is the only calendar card you don't control — everything else is ~a week of
 agent-nights plus your human-only tasks (domain, OAuth creds, dev accounts, the recording, and
 pressing submit on HN).

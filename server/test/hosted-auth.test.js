@@ -74,7 +74,7 @@ test("mint a token via POST /v1/tokens, then push with it", async () => {
   })).json();
   assert.ok(minted.token && minted.token.startsWith("vf_pk_"), "returns a plaintext token once");
 
-  const push = await fetch(BASE + "/v1/channels/personal/items", {
+  const push = await fetch(BASE + "/v1/lanes/personal/cards", {
     method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + minted.token }, body: JSON.stringify({ title: "hi" }),
   });
   assert.equal(push.status, 200, "the minted token can push to the user's own lane");

@@ -12,7 +12,7 @@ const OWNER = "owner_metrics";
 function setup() {
   reset();
   bus.ensureOwner(OWNER, "metrics owner");
-  bus.createChannel({ id: "m1", title: "M1", visibility: "public" }, OWNER);
+  bus.createLane({ id: "m1", title: "M1", visibility: "public" }, OWNER);
   bus.ensureUser("u1");
   return "m1";
 }
@@ -21,17 +21,17 @@ beforeEach(() => reset());
 
 test("push bumps pushes; dedupe upsert does not double-count", () => {
   const c = setup();
-  bus.pushItem(c, { title: "one", dedupe_key: "k" }, OWNER);
+  bus.pushCard(c, { title: "one", dedupe_key: "k" }, OWNER);
   assert.equal(metrics.counterValue("pushes"), 1);
-  bus.pushItem(c, { title: "one v2", dedupe_key: "k" }, OWNER); // upsert, not a new item
+  bus.pushCard(c, { title: "one v2", dedupe_key: "k" }, OWNER); // upsert, not a new item
   assert.equal(metrics.counterValue("pushes"), 1);
-  bus.pushItem(c, { title: "two" }, OWNER);
+  bus.pushCard(c, { title: "two" }, OWNER);
   assert.equal(metrics.counterValue("pushes"), 2);
 });
 
 test("delivered and seen drive the headline seen-rate (per distinct card)", () => {
   const c = setup();
-  const { item } = bus.pushItem(c, { title: "hi" }, OWNER);
+  const { item } = bus.pushCard(c, { title: "hi" }, OWNER);
 
   // nothing delivered yet → no rate to report
   assert.equal(metrics.snapshot().seenRate, null);
@@ -58,7 +58,7 @@ test("delivered and seen drive the headline seen-rate (per distinct card)", () =
 
 test("must_see re-surfacing counts as ONE delivered card, not one per impression", () => {
   const c = setup();
-  const { item } = bus.pushItem(c, { title: "important", delivery: { class: "must_see" } }, OWNER);
+  const { item } = bus.pushCard(c, { title: "important", delivery: { class: "must_see" } }, OWNER);
 
   bus.next("u1"); bus.next("u1"); bus.next("u1"); // re-surfaces 3x while unseen
   let s = metrics.snapshot();
@@ -76,11 +76,11 @@ test("must_see re-surfacing counts as ONE delivered card, not one per impression
 test("seen-rate is a fraction across multiple deliveries", () => {
   reset();
   bus.ensureOwner(OWNER, "o");
-  bus.createChannel({ id: "a", title: "A", visibility: "public" }, OWNER);
-  bus.createChannel({ id: "b", title: "B", visibility: "public" }, OWNER);
+  bus.createLane({ id: "a", title: "A", visibility: "public" }, OWNER);
+  bus.createLane({ id: "b", title: "B", visibility: "public" }, OWNER);
   bus.ensureUser("u1");
-  const a = bus.pushItem("a", { title: "a" }, OWNER).item;
-  bus.pushItem("b", { title: "b" }, OWNER);
+  const a = bus.pushCard("a", { title: "a" }, OWNER).item;
+  bus.pushCard("b", { title: "b" }, OWNER);
 
   bus.next("u1"); bus.next("u1"); // both delivered (round-robin)
   bus.markSeen("u1", a.id); // only one acked
@@ -92,9 +92,9 @@ test("seen-rate is a fraction across multiple deliveries", () => {
 
 test("snapshot gauges reflect current state", () => {
   const c = setup();
-  bus.pushItem(c, { title: "x" }, OWNER);
+  bus.pushCard(c, { title: "x" }, OWNER);
   const s = metrics.snapshot();
   assert.ok(s.lanes >= 1);
-  assert.ok(s.items >= 1);
+  assert.ok(s.cards >= 1);
   assert.ok(s.owners >= 1);
 });

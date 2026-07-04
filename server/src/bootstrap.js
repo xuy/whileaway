@@ -1,4 +1,4 @@
-// First-boot seeding. Creates a default publisher owner + key and the default channels we
+// First-boot seeding. Creates a default publisher owner + key and the default lanes we
 // "own", then auto-subscribes the local consumer so the feed isn't empty on first run. The
 // reference pushers (clients/) use the returned key to push real content over the public API.
 import { db } from "./store.js";
@@ -7,8 +7,8 @@ import * as bus from "./bus.js";
 export const LOCAL_USER = "local";
 const OWNER_ID = "owner_default";
 
-// The channels we ship pushers for. They're just regular channels owned by us.
-export const DEFAULT_CHANNELS = [
+// The lanes we ship pushers for. They're just regular lanes owned by us.
+export const DEFAULT_LANES = [
   { id: "wikipedia", title: "Wikipedia", accent: "#3a86ff", kind: "article", visibility: "public", description: "A random article to skim." },
   { id: "hackernews", title: "Hacker News", accent: "#ff8c42", kind: "discussion", visibility: "public", description: "Top stories." },
   { id: "rss", title: "RSS", accent: "#3a86ff", kind: "article", visibility: "public", description: "Articles from configured feeds." },
@@ -32,8 +32,8 @@ export function bootstrap() {
     key = bus.mintKey(OWNER_ID, "auto (set WHILEAWAY_KEY to persist)", { userId: LOCAL_USER });
   }
 
-  for (const spec of DEFAULT_CHANNELS) {
-    const ch = bus.createChannel(spec, OWNER_ID); // ch.id is the global `${OWNER_ID}:${slug}`
+  for (const spec of DEFAULT_LANES) {
+    const ch = bus.createLane(spec, OWNER_ID); // ch.id is the global `${OWNER_ID}:${slug}`
     // Seed the local consumer (force: includes the private `personal` lane, which the public
     // subscribe route would reject). Real per-user clients get their own set via ensureUser().
     if (!(db.subs[LOCAL_USER] && db.subs[LOCAL_USER][ch.id])) bus.subscribe(LOCAL_USER, ch.id, { force: true });

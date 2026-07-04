@@ -21,7 +21,7 @@ test("empty database loads every collection as an empty map", () => {
   const d = new SqliteDriver(tmpDb());
   const state = d.load();
   d.close();
-  for (const c of ["owners", "keys", "channels", "items", "itemsByChannel", "subs", "delivery", "history", "cursor"]) {
+  for (const c of ["owners", "keys", "lanes", "cards", "cardsByLane", "subs", "delivery", "history", "cursor"]) {
     assert.deepEqual(state[c], {});
   }
 });
@@ -31,9 +31,9 @@ test("save then load round-trips the db shape across a fresh connection (restart
   const w = new SqliteDriver(file);
   w.save({
     owners: { o1: { id: "o1", label: "acct" } },
-    channels: { c1: { id: "c1", title: "C1", ownerId: "o1" } },
-    items: { i1: { id: "i1", channelId: "c1", title: "hi" } },
-    itemsByChannel: { c1: ["i1"] },
+    lanes: { c1: { id: "c1", title: "C1", ownerId: "o1" } },
+    cards: { i1: { id: "i1", laneId: "c1", title: "hi" } },
+    cardsByLane: { c1: ["i1"] },
     subs: { o1: { c1: { muted: false } } },
   });
   w.close();
@@ -42,26 +42,26 @@ test("save then load round-trips the db shape across a fresh connection (restart
   const state = r.load();
   r.close();
   assert.equal(state.owners.o1.label, "acct");
-  assert.equal(state.channels.c1.title, "C1");
-  assert.equal(state.items.i1.title, "hi");
-  assert.deepEqual(state.itemsByChannel.c1, ["i1"]);
+  assert.equal(state.lanes.c1.title, "C1");
+  assert.equal(state.cards.i1.title, "hi");
+  assert.deepEqual(state.cardsByLane.c1, ["i1"]);
   assert.equal(state.subs.o1.c1.muted, false);
 });
 
-test("10k items survive a save/restart cycle", () => {
+test("10k cards survive a save/restart cycle", () => {
   const file = tmpDb();
-  const items = {};
+  const cards = {};
   const ids = [];
-  for (let i = 0; i < 10000; i++) { const id = "itm_" + i; items[id] = { id, channelId: "c1", title: "card " + i }; ids.push(id); }
+  for (let i = 0; i < 10000; i++) { const id = "card_" + i; cards[id] = { id, laneId: "c1", title: "card " + i }; ids.push(id); }
 
   const w = new SqliteDriver(file);
-  w.save({ channels: { c1: { id: "c1", ownerId: "o1" } }, items, itemsByChannel: { c1: ids } });
+  w.save({ lanes: { c1: { id: "c1", ownerId: "o1" } }, cards, cardsByLane: { c1: ids } });
   w.close();
 
   const r = new SqliteDriver(file);
   const state = r.load();
   r.close();
-  assert.equal(Object.keys(state.items).length, 10000);
-  assert.equal(state.items["itm_9999"].title, "card 9999");
-  assert.equal(state.itemsByChannel.c1.length, 10000);
+  assert.equal(Object.keys(state.cards).length, 10000);
+  assert.equal(state.cards["card_9999"].title, "card 9999");
+  assert.equal(state.cardsByLane.c1.length, 10000);
 });

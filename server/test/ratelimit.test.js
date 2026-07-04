@@ -38,25 +38,25 @@ test("lane cap: creating beyond maxLanesPerOwner is rejected (403)", () => {
   LIMITS.maxLanesPerOwner = 2;
   try {
     bus.ensureOwner("o1");
-    bus.createChannel({ id: "l1" }, "o1");
-    bus.createChannel({ id: "l2" }, "o1");
-    assert.throws(() => bus.createChannel({ id: "l3" }, "o1"), (e) => e.status === 403 && /lane cap/.test(e.message));
+    bus.createLane({ id: "l1" }, "o1");
+    bus.createLane({ id: "l2" }, "o1");
+    assert.throws(() => bus.createLane({ id: "l3" }, "o1"), (e) => e.status === 403 && /lane cap/.test(e.message));
     // Updating an EXISTING lane is not blocked by the cap.
-    assert.doesNotThrow(() => bus.createChannel({ id: "l1", title: "renamed" }, "o1"));
+    assert.doesNotThrow(() => bus.createLane({ id: "l1", title: "renamed" }, "o1"));
   } finally { LIMITS.maxLanesPerOwner = saved; }
 });
 
-test("item cap: pushing beyond maxItemsPerOwner is rejected, but dedupe upsert is allowed", () => {
+test("card cap: pushing beyond maxCardsPerOwner is rejected, but dedupe upsert is allowed", () => {
   reset();
-  const saved = LIMITS.maxItemsPerOwner;
-  LIMITS.maxItemsPerOwner = 2;
+  const saved = LIMITS.maxCardsPerOwner;
+  LIMITS.maxCardsPerOwner = 2;
   try {
     bus.ensureOwner("o1");
-    bus.createChannel({ id: "c1" }, "o1");
-    bus.pushItem("c1", { title: "a" }, "o1");
-    bus.pushItem("c1", { title: "b", dedupe_key: "k" }, "o1");
-    assert.throws(() => bus.pushItem("c1", { title: "c" }, "o1"), (e) => e.status === 403 && /item cap/.test(e.message));
+    bus.createLane({ id: "c1" }, "o1");
+    bus.pushCard("c1", { title: "a" }, "o1");
+    bus.pushCard("c1", { title: "b", dedupe_key: "k" }, "o1");
+    assert.throws(() => bus.pushCard("c1", { title: "c" }, "o1"), (e) => e.status === 403 && /card cap/.test(e.message));
     // Re-pushing an existing dedupe_key upserts in place — allowed even at the cap.
-    assert.doesNotThrow(() => bus.pushItem("c1", { title: "b2", dedupe_key: "k" }, "o1"));
-  } finally { LIMITS.maxItemsPerOwner = saved; }
+    assert.doesNotThrow(() => bus.pushCard("c1", { title: "b2", dedupe_key: "k" }, "o1"));
+  } finally { LIMITS.maxCardsPerOwner = saved; }
 });

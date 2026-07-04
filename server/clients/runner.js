@@ -7,12 +7,12 @@ import * as hackernews from "./sources/hackernews.js";
 import * as rss from "./sources/rss.js";
 import * as mock from "./sources/mock.js";
 
-// Which source feeds which channel. The channel must already exist and be owned by the key.
+// Which source feeds which lane. The lane must already exist and be owned by the key.
 const PUSHERS = [
-  { channel: "wikipedia", run: () => wikipedia.fetch_(4) },
-  { channel: "hackernews", run: () => hackernews.fetch_(6) },
-  { channel: "rss", run: () => rss.fetch_(6, parseList(process.env.FEED_RSS) || rss.DEFAULT_FEEDS) },
-  { channel: "personal", run: () => mock.fetch_(3) },
+  { lane: "wikipedia", run: () => wikipedia.fetch_(4) },
+  { lane: "hackernews", run: () => hackernews.fetch_(6) },
+  { lane: "rss", run: () => rss.fetch_(6, parseList(process.env.FEED_RSS) || rss.DEFAULT_FEEDS) },
+  { lane: "personal", run: () => mock.fetch_(3) },
 ];
 
 const INTERVAL_MS = Number(process.env.PUSH_INTERVAL_MS) || 10 * 60 * 1000;
@@ -32,13 +32,13 @@ function toPayload(it) {
   };
 }
 
-async function pushOne(apiBase, key, channel, payload) {
-  const r = await fetch(`${apiBase}/v1/channels/${channel}/items`, {
+async function pushOne(apiBase, key, lane, payload) {
+  const r = await fetch(`${apiBase}/v1/lanes/${lane}/cards`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
     body: JSON.stringify(payload),
   });
-  if (!r.ok) throw new Error(`push ${channel} -> ${r.status}`);
+  if (!r.ok) throw new Error(`push ${lane} -> ${r.status}`);
   return r.json();
 }
 
@@ -48,12 +48,12 @@ async function runRound(apiBase, key) {
       const items = await p.run();
       let n = 0, fresh = 0;
       for (const it of items) {
-        try { const res = await pushOne(apiBase, key, p.channel, toPayload(it)); n++; if (!res.deduped) fresh++; }
+        try { const res = await pushOne(apiBase, key, p.lane, toPayload(it)); n++; if (!res.deduped) fresh++; }
         catch (_) {}
       }
-      console.log(`[pusher] ${p.channel}: pushed ${n} (${fresh} new)`);
+      console.log(`[pusher] ${p.lane}: pushed ${n} (${fresh} new)`);
     } catch (e) {
-      console.warn(`[pusher] ${p.channel} failed:`, e.message);
+      console.warn(`[pusher] ${p.lane} failed:`, e.message);
     }
   }
 }

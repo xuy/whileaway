@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Tab</title>
+  <style>
+    :root { --ink:#17162e; --muted:rgba(23,22,46,0.55); --line:rgba(23,22,46,0.10); --accent:#7c6cff; }
+    * { box-sizing:border-box; }
+    html,body { height:100%; margin:0; }
+    body {
+      font-family:'DM Sans',system-ui,-apple-system,sans-serif; color:var(--ink);
+      background:linear-gradient(170deg,#f7f6ff 0%,#eef0fb 100%);
+      display:flex; align-items:center; justify-content:center; padding:24px;
+    }
+    .wrap { width:100%; max-width:560px; }
+    .brand { display:flex; align-items:center; gap:8px; justify-content:center; margin-bottom:20px; opacity:.7; }
+    .logo { width:20px; height:20px; border-radius:6px; background:linear-gradient(135deg,#7c6cff,#3a86ff); }
+    .brand b { font-size:14px; font-weight:700; }
+    .pcard { background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden;
+      box-shadow:0 12px 40px rgba(23,22,46,0.08); opacity:0; transform:translateY(8px); transition:.35s; }
+    .pcard.in { opacity:1; transform:none; }
+    .pcard .pbar { display:flex; align-items:center; gap:7px; padding:12px 16px; font-size:12px; font-weight:600;
+      color:var(--muted); border-bottom:1px solid var(--line); }
+    .pcard .pdot { width:8px; height:8px; border-radius:50%; }
+    .pcard img { width:100%; max-height:200px; object-fit:cover; display:block; }
+    .pcard .pbody { padding:18px 18px 20px; }
+    .pcard .ptitle { font-weight:700; font-size:20px; line-height:1.3; letter-spacing:-.01em; }
+    .pcard .pdesc { font-size:14.5px; color:#3a3950; margin-top:8px; line-height:1.5; }
+    .pcard a.plink { display:inline-block; margin-top:14px; font-size:13px; color:var(--accent); font-weight:600; text-decoration:none; }
+    .empty { text-align:center; color:var(--muted); font-size:15px; line-height:1.6; }
+    .empty .recipe { display:inline-block; margin-top:8px; background:rgba(124,108,255,0.10); color:var(--accent);
+      padding:3px 9px; border-radius:6px; font-size:13px; }
+    .foot { text-align:center; margin-top:18px; font-size:12px; }
+    .foot a { color:var(--muted); text-decoration:none; }
+    .foot a:hover { color:var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand"><span class="logo"></span><b>whileaway</b></div>
+    <div id="slot"><div class="empty">…</div></div>
+    <div class="foot"><a id="dash" href="#" target="_blank" rel="noreferrer">open dashboard</a></div>
+  </div>
+  <script src="config.js"></script>
+  <script src="newtab.js"></script>
+</body>
+</html>

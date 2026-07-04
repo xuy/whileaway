@@ -8,8 +8,7 @@ var VF_DEBUG = true; // console logs on the AI page; set false to silence
 
 var VF_ENVS = {
   dev: { api: "http://localhost:4000" },
-  // Replace with your Fly app once deployed, e.g. https://whileaway-bus.fly.dev
-  prod: { api: "https://whileaway-bus.fly.dev" },
+  prod: { api: "https://whileaway.fly.dev" },
 };
 
 var VF_API_BASE = VF_ENVS[VF_ENV].api;

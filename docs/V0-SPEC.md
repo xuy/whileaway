@@ -4,12 +4,33 @@ Status: draft for build · Owner: Eric · Last updated: 2026-07-03
 
 ## 1. One-liner
 
-**Your agents push to your idle moments.** While an AI is thinking, whileaway shows one card you
-(or your agents) chose — not an ad. v0 is a single-user product: a hosted service + self-hostable
-bus, a Chrome extension that renders cards during AI generations, and an MCP server so any agent
-can become a producer in one sentence.
+**whileaway is the feed only you can publish to** — delivered in the seconds you'd otherwise spend
+waiting on an AI. You tell your agent one sentence ("push me a stoic quote each morning, expire at
+noon"), and it fills your own idle moments. Not an ad, not someone else's algorithm — a channel
+where only you reach you.
 
-Positioning for launch: *"They're putting ads in your AI wait time. Put your own feed there instead."*
+v0 is deliberately single-user: a self-hostable bus, a Chrome extension that renders one card while
+an AI generates, and an MCP server so your agent writes to your feed in one sentence.
+
+### Why this, why now, and why it's defensible
+- **The self-feed is the one thing big platforms structurally won't build.** Every major platform's
+  business depends on controlling what you see — that's the monetizable surface. "Apps push to
+  users" is what platforms want to own (and why Pushbullet got eaten). "*I* push to *me*" has no
+  constituency inside Apple/Google/OpenAI; it's not just un-sherlocked, it's anti-aligned with their
+  incentives.
+- **Why now:** person-controls-their-inputs already existed — it was RSS. It lost to algorithmic
+  feeds on *labor*, not ideology: curating your own inputs was work, and platforms made passivity
+  free. Your agent now does that labor. Self-publishing to yourself used to cost effort per item;
+  with MCP it costs one sentence per *intent*. The idea was right for twenty years and only became
+  practical ~eighteen months ago.
+- **The shareable unit is the recipe**, not the channel: the sentence you told your agent. Recipes
+  spread like dotfiles and awesome-lists — copyable text, zero access granted, sovereignty intact.
+  `docs/EXAMPLES.md` is the recipe book and the growth engine.
+- **Single-user is the thesis, not a compromise.** The future team feature is just "a recipe whose
+  lane has two readers" — an extension, never a platform play.
+
+Positioning for launch: *"The feed only you can publish to."* (Secondary: *they're monetizing your
+AI wait time — put your own feed there instead.*)
 
 ## 2. What v0 is (and is not)
 

@@ -76,7 +76,7 @@ function setOnboarding(show) {
 // Pull the next card and render it; drives onboarding visibility. Returns true if a card showed.
 async function doPreview() {
   try {
-    const item = await get("/v1/feed/next");
+    const item = await get("/v1/feed/peek"); // non-mutating — never consumes the card the AI tab will show
     renderPreview(item);
     setOnboarding(!item); // connected but empty → still guide the user
     loadHistory();

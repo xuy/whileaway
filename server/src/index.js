@@ -131,6 +131,13 @@ app.get("/v1/feed/next", wrap((req, res) => {
   if (!item) return void res.status(204).end();
   res.json(item);
 }));
+// Non-mutating preview of the next card — for UIs (extension popup) that want to show what's
+// coming without consuming it. Never records a delivery.
+app.get("/v1/feed/peek", wrap((req, res) => {
+  const item = bus.peek(user(req));
+  if (!item) return void res.status(204).end();
+  res.json(item);
+}));
 app.post("/v1/feed/seen", wrap((req) => bus.markSeen(user(req), (req.body || {}).id || (req.body || {}).itemId)));
 app.get("/v1/feed/history", wrap((req) => ({ items: bus.history(user(req), Number(req.query.limit) || 50) })));
 

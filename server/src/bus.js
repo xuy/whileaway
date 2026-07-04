@@ -268,10 +268,10 @@ export function setMuted(userId, channelId, muted) {
 }
 
 // --- delivery engine -------------------------------------------------------
-// Pick the single best eligible card for this user right now.
-export function next(userId) {
+// Choose the single best eligible card for this user right now, WITHOUT mutating any state.
+// `next()` records delivery on top of this; `peek()` is the read-only preview.
+function selectNext(userId, now) {
   const subs = getSubs(userId);
-  const now = Date.now();
   const eligible = [];
   for (const [channelId, sub] of Object.entries(subs)) {
     if (sub.muted) continue;
@@ -294,14 +294,27 @@ export function next(userId) {
     new Date(b.createdAt) - new Date(a.createdAt));
 
   // Round-robin fairness: avoid serving the same channel twice in a row when alternatives exist.
-  const cur = db.cursor[userId] || (db.cursor[userId] = {});
-  let chosen = eligible.find((it) => it.channelId !== cur.lastChannelId) || eligible[0];
+  const last = db.cursor[userId] && db.cursor[userId].lastChannelId;
+  return eligible.find((it) => it.channelId !== last) || eligible[0];
+}
 
+// Read-only: the card next() WOULD deliver, without consuming it. Used for the extension's
+// preview so simply opening the popup never burns a one-shot ambient card.
+export function peek(userId) {
+  const chosen = selectNext(userId, Date.now());
+  return chosen ? decorate(chosen) : null;
+}
+
+// Deliver the single best eligible card and record the delivery (mutates state).
+export function next(userId) {
+  const now = Date.now();
+  const chosen = selectNext(userId, now);
+  if (!chosen) return null;
   const dk = deliveryKey(userId, chosen.id);
   const st = db.delivery[dk] || (db.delivery[dk] = { deliveredCount: 0, lastDeliveredAt: null, seenAt: null });
   st.deliveredCount++;
   st.lastDeliveredAt = new Date().toISOString();
-  cur.lastChannelId = chosen.channelId;
+  (db.cursor[userId] || (db.cursor[userId] = {})).lastChannelId = chosen.channelId;
   save();
   return decorate(chosen);
 }

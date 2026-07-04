@@ -1,14 +1,14 @@
 # whileaway-mcp
 
-An [MCP](https://modelcontextprotocol.io) server that turns any agent into a **whileaway producer**. Point it at your whileaway bus with a bearer token and your agent can push cards to your idle-moment feed in one sentence — *"push me a 20-card Spanish deck spaced over two weeks."*
+An [MCP](https://modelcontextprotocol.io) server that turns any agent into a **whileaway producer**. Point it at your whileaway feed with a bearer token and your agent can push cards to your idle-moment feed in one sentence — *"push me a 20-card Spanish deck spaced over two weeks."*
 
-It's a thin, stateless wrapper over the bus `/v1` API. All the delivery intelligence (ambient vs must_see, recurring cooldowns, dedupe upsert, round-robin fairness) lives in the bus.
+It's a thin, stateless wrapper over the whileaway `/v1` API. All the delivery intelligence (ambient vs must_see, recurring cooldowns, dedupe upsert, round-robin fairness) lives server-side.
 
 ## Configure
 
 | env | default | meaning |
 |-----|---------|---------|
-| `WHILEAWAY_URL` | `http://localhost:4000` | Base URL of your whileaway bus |
+| `WHILEAWAY_URL` | `http://localhost:4000` | Base URL of your whileaway server (e.g. `https://whileaway.fly.dev`) |
 | `WHILEAWAY_TOKEN` | — | Bearer token minted from the dashboard (or the self-host boot key) |
 | `WHILEAWAY_LANE` | `personal` | Default lane when a tool call omits one |
 
@@ -16,7 +16,7 @@ It's a thin, stateless wrapper over the bus `/v1` API. All the delivery intellig
 
 ```bash
 claude mcp add whileaway \
-  --env WHILEAWAY_URL=https://your-bus.example.com \
+  --env WHILEAWAY_URL=https://whileaway.fly.dev \
   --env WHILEAWAY_TOKEN=vf_pk_… \
   -- npx -y whileaway-mcp
 ```
@@ -29,7 +29,7 @@ claude mcp add whileaway \
     "whileaway": {
       "command": "npx",
       "args": ["-y", "whileaway-mcp"],
-      "env": { "WHILEAWAY_URL": "https://your-bus.example.com", "WHILEAWAY_TOKEN": "vf_pk_…" }
+      "env": { "WHILEAWAY_URL": "https://whileaway.fly.dev", "WHILEAWAY_TOKEN": "vf_pk_…" }
     }
   }
 }
@@ -40,8 +40,8 @@ claude mcp add whileaway \
 | tool | what it does |
 |------|--------------|
 | `push_card` | Push one card to a lane (created if missing). |
-| `push_deck` | Push many cards at once with a shared delivery config — the "push a deck, let the bus drip it out" move. |
-| `create_lane` | Create/update a lane (private channel) explicitly. |
+| `push_deck` | Push many cards at once with a shared delivery config — the "push a deck, let whileaway drip it out" move. |
+| `create_lane` | Create/update a lane (a private lane you own) explicitly. |
 | `list_lanes` | List the lanes visible to you. |
 | `get_history` | Recently delivered-and-seen cards (for an agent's own spaced repetition). |
 | `get_feed_status` | Health + lane snapshot so an agent doesn't overflood a lane. |
@@ -59,5 +59,5 @@ Each tool's description teaches the delivery semantics with worked examples, so 
 
 ```bash
 npm install
-npm test          # boots a local bus and drives the client + stdio server end-to-end
+npm test          # boots a local server and drives the client + stdio server end-to-end
 ```

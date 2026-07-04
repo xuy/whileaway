@@ -9,6 +9,7 @@ import * as bus from "./bus.js";
 import { bootstrap, LOCAL_USER } from "./bootstrap.js";
 import { startPushers } from "../clients/runner.js";
 import { hit, LIMITS } from "./ratelimit.js";
+import * as metrics from "./metrics.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -123,6 +124,16 @@ app.get("/v1/admin/hello", (req, res) => {
 });
 app.get("/v1/feed/config", (_req, res) => res.json(bus.CONFIG));
 
+// Activation & seen-rate funnel (T-63). Aggregate-only, no per-user data. In hosted mode it
+// carries operational numbers, so require a valid bearer token (any resolves) rather than leaving
+// it fully public; self-host ("none") is a single trust domain and stays open.
+app.get("/v1/metrics", (req, res) => {
+  if (AUTH_MODE === "hosted" && !bus.resolveToken(bearer(req))) {
+    return void res.status(401).json({ error: "metrics require a valid token in hosted mode" });
+  }
+  res.json(metrics.snapshot());
+});
+
 // ---- consumer: feed ------------------------------------------------------
 app.get("/v1/feed/next", wrap((req, res) => {
   const u = user(req);
@@ -218,6 +229,7 @@ app.post("/v1/tokens", async (req, res) => {
   bus.ensureOwner(uid, s.user.email || uid);
   const label = String(body.label || "token").slice(0, 40);
   const token = bus.mintKey(uid, label, { userId: uid }); // userId === ownerId for a hosted god-token
+  metrics.bump("tokensMinted"); // funnel: signup → TOKEN → delivered → seen (T-63)
   res.json({ token, label }); // shown once; only the hash is persisted
 });
 

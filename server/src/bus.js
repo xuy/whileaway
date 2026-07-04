@@ -7,6 +7,7 @@ import {
   db, save, load, deliveryKey, getSubs, pushItemRecord, findByDedupe, addHistory,
 } from "./store.js";
 import { LIMITS } from "./ratelimit.js";
+import { bump } from "./metrics.js";
 
 // Display/delivery timings handed to the consumer client (not the per-item semantics).
 export const CONFIG = { cooldownMs: 20000, minVisibleMs: 1500, displayMs: 11000 };
@@ -201,6 +202,7 @@ export function pushItem(ref, raw, ownerId) {
     throw httpErr(403, `item cap reached (max ${LIMITS.maxItemsPerOwner} per owner)`);
   }
   pushItemRecord(item);
+  bump("pushes"); // new items only; dedupe upserts returned above (T-63)
   return { item, deduped: false };
 }
 
@@ -316,6 +318,7 @@ export function next(userId) {
   st.lastDeliveredAt = new Date().toISOString();
   (db.cursor[userId] || (db.cursor[userId] = {})).lastChannelId = chosen.channelId;
   save();
+  bump("delivered"); // seen-rate denominator (T-63)
   return decorate(chosen);
 }
 
@@ -340,6 +343,7 @@ export function markSeen(userId, itemId) {
   if (!st.seenAt) {
     st.seenAt = new Date().toISOString();
     if (it) addHistory(userId, decorate(it));
+    bump("seen"); // seen-rate numerator, counted once per (user,item) (T-63)
   }
   save();
   return { ok: true };

@@ -26,6 +26,7 @@ export const db = {
   delivery: {}, // `${userId}|${itemId}` -> { deliveredCount, lastDeliveredAt, seenAt }
   history: {}, // userId -> [ {item snapshot, seenAt}, ... ] newest first
   cursor: {}, // userId -> { lastChannelId }  (for round-robin fairness)
+  metrics: {}, // counterName -> integer (activation/seen-rate counters, T-63)
 };
 
 const MAX_ITEMS_PER_CHANNEL = 250;

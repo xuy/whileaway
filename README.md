@@ -1,139 +1,143 @@
 # whileaway
 
-**While the AI thinks, skim one useful thing.** whileaway shows a small card in the corner of
-ChatGPT / Claude / Perplexity / Gemini / etc. *the moment you send a prompt* — surfacing one card
-from a feed you control, instead of an ad.
+**The feed only you can publish to.** One feed where only *you* reach you — filled by your own
+AI/MCP agent, one sentence at a time. You skim it in the seconds you'd otherwise spend waiting on
+an AI. Not an ad, not someone else's algorithm.
 
 ![license](https://img.shields.io/badge/license-Apache--2.0-blue)
 ![backend](https://img.shields.io/badge/backend-Node%2020-3a86ff)
 ![extension](https://img.shields.io/badge/extension-MV3-7c6cff)
 
-Under the hood it's **a message bus for glanceable cards**. The backend doesn't crawl the
-internet — it *receives pushes*. Anyone with a publisher key can push cards onto a **lane**;
-you **subscribe** to the lanes you want; a delivery engine shows you the single best card per
-moment. Think *Telegram lanes delivered as ambient cards* — broadcast you opted into, one at a
-time, never a scroll.
+Tell your agent *"push me one stoic quote each morning"* or *"teach me Spanish, spaced over two
+weeks"* and it fills a **lane** in your feed. A delivery engine shows you the single best **card**
+per moment — spaced, deduped, expiring on cue. You read it wherever you are: a card in the corner
+while an AI thinks, a new browser tab, an RSS reader, the dashboard.
 
-## 🔒 Privacy first
+**Your feed is an API, not an app.** Every surface is a thin client of one endpoint
+(`GET /v1/feed/next`) — see [`docs/FEED-CLIENTS.md`](docs/FEED-CLIENTS.md).
 
-whileaway **never reads your prompt, the AI's answer, page text, links, or citations.** The content
-script only detects *that a generation started* (form submit / Enter / send-click / the AI's "stop"
-button) and asks **your** backend for the next card. Nothing about the page leaves your browser. No
-ads, no trackers, no account required. And because the only lanes that can reach you are ones
-*you subscribed to*, "someone pushes spam at me" isn't possible — mute or unsubscribe in one tap.
+### Privacy
+whileaway **never reads your prompts, the AI's answers, page text, or links.** The extension only
+detects *that* a generation started and asks **your** feed for the next card. No trackers, no ads.
+And because only you (via your agent) publish to your feed, "someone spams me" isn't a thing.
 
-## How it works
+## Why now
 
-```
-producer (any client, with a key) ──push──▶  LANE  ──┐
-                                                          ├─▶ delivery engine ─▶ GET /v1/feed/next ─▶ card
-you ──subscribe──▶ lanes you chose ───────────────────┘
-```
+Person-controls-their-inputs already existed — it was RSS. It lost to algorithmic feeds on *labor*,
+not ideology: curating your own inputs was work, and platforms made passivity free. Your agent now
+does that labor. Filling your own feed used to cost effort per card; with MCP it costs one sentence
+per *intent*. The idea was right for twenty years and only became practical about eighteen months
+ago.
 
-- **Lane** — a named stream with an owner and a visibility (`private` / `unlisted` / `public`).
-- **Card** — pushed onto a lane, with delivery semantics: `priority`, `expires_at`,
-  `repeat` (`once` | `recurring` + cooldown/max), `dedupe_key` (re-push upserts instead of
-  duplicating), and a `class` (`ambient` shows once; `must_see` keeps surfacing until you've seen
-  it — important, but never an interrupting notification).
-- **Subscription** — your feed is the merge of lanes you subscribe to. Your "personal" lane is
-  just lane #1 (private).
-- **Delivery engine** — drops expired, honors repeat/cooldown, dedupes, ranks by class+priority+
-  recency, and round-robins across lanes so no one lane floods you.
+## Recipes
 
-The default content (Wikipedia, Hacker News, RSS, a mock Personal lane) isn't the bus crawling —
-it's **reference push-clients** in [`server/clients/`](server/clients) pushing into lanes *we*
-own, over the same public API any integrator would use.
+A **recipe** is the sentence you hand your agent. Copy one:
 
-```
-whileaway/
-├── server/
-│   ├── src/          the bus: store · bus (delivery engine) · bootstrap · http
-│   └── clients/      reference pushers (wikipedia · hackernews · rss · mock) + sources
-├── extension/        MV3 Chrome extension (content script · proxy · popup)
-└── LICENSE           Apache-2.0
-```
+- *"Add cards teaching me basic Spanish greetings to my whileaway, spaced over two weeks."*
+- *"Resurface the commitments I made in today's meetings until I act on them."*
+- *"Drip me one quote from Marcus Aurelius every few hours."*
+- *"Queue these articles to skim while I'm waiting on the AI."*
+- *"Remind me about my 10am standup, and keep showing it until I've seen it."*
 
-## Quick start
+More, with the exact tool calls they produce, in [`docs/EXAMPLES.md`](docs/EXAMPLES.md).
 
-### 1. Run the bus
+## Quickstart (self-host)
+
+It's just Node — your feed lives entirely on your own machine.
 
 ```bash
 cd server
-cp .env.example .env       # optional — defaults work as-is
 npm install
-npm start
+npm start            # seeds starter lanes, prints your key, runs reference pushers
+curl localhost:4000/health
 ```
 
-On boot it seeds default lanes, auto-subscribes your local user, prints a **publisher key**, and
-runs the bundled pushers in-process so the feed is populated immediately. Check it:
-`curl localhost:4000/health`.
+Then load the extension: `chrome://extensions` → **Developer mode** → **Load unpacked** →
+select `extension/`. Open the popup, confirm the backend is `http://localhost:4000`, open an AI
+chat, send a prompt → a card appears. (No install? Open `extension/demo.html?base=http://localhost:4000`.)
 
-> Set `WHILEAWAY_KEY` in `.env` to a stable key (so external pushers survive restarts), or
-> `RUN_DEFAULT_PUSHERS=0` to push only from your own clients (`npm run pushers` runs them standalone).
+## Or use the hosted instance
 
-### 2. Load the extension
+**[whileaway.fly.dev](https://whileaway.fly.dev)** — sign in with a magic link, and the connect
+page hands you a token, a one-paste extension setup code, and your MCP snippet. (Public email
+signup is landing shortly; self-host works today with zero setup.)
 
-1. `chrome://extensions` → **Developer mode** → **Load unpacked** → select `extension/`.
-2. Click the icon: backend status, **Lanes** (subscribe / mute), a live **card preview**,
-   history, and a **Show on this tab** test button. The **Backend** field points it at your server.
-3. Open ChatGPT/Claude, **reload the tab once**, send a prompt → a card appears bottom-right.
+## Connect your agent (MCP)
 
-No-install peek: open `extension/demo.html?base=http://localhost:4000` in any browser.
+`whileaway-mcp` is a thin stdio MCP server exposing `push_card` / `push_deck` / `create_lane` /
+`list_lanes` / `get_history` / `get_feed_status`. Point it at your feed:
+
+```bash
+claude mcp add whileaway \
+  -e WHILEAWAY_URL=http://localhost:4000 \
+  -e WHILEAWAY_TOKEN=<your-key> \
+  -- npx -y whileaway-mcp
+```
+
+Then just talk to your agent — the tool descriptions teach it the delivery semantics, so a
+one-sentence recipe becomes the right `push_deck` call with no scheduling engine on your side.
+
+## How it works
+
+- **Lane** — a named division of your feed you own (`private` / `unlisted` / `public`).
+- **Card** — pushed onto a lane, with delivery semantics: `priority`, `expires_at`,
+  `repeat` (`once` | `recurring` + cooldown/max), `dedupe_key` (re-push upserts), and a `class`
+  (`ambient` shows once; `must_see` re-surfaces until seen — present, never an interrupting notification).
+- **Delivery engine** — drops expired, honors repeat/cooldown, dedupes, ranks by
+  class+priority+recency, and round-robins across lanes so none floods you.
+- **Starter lanes** (Wikipedia, Hacker News, RSS) are optional public lanes, auto-subscribed so the
+  feed is alive in minute one — filled by **reference pushers** in
+  [`server/clients/`](server/clients) over the same public API any integrator uses.
 
 ## API
 
-**Consumer** (a user identity; open by default for local self-host):
+**Consumer** (identity via bearer token, or `X-Whileaway-User` header when self-hosting):
 
 | method | path | purpose |
 |--------|------|---------|
-| GET | `/v1/feed/next` | next card, or `204` when nothing's eligible |
-| POST | `/v1/feed/seen` | `{ id }` → mark seen (history; stops `must_see` re-surfacing) |
-| GET | `/v1/feed/history?limit=` | recently delivered |
-| GET | `/v1/lanes` | directory: lanes you can see, with subscribe/mute state |
-| POST | `/v1/subscriptions` | `{ laneId, action }` — `subscribe`/`unsubscribe`/`mute`/`unmute` |
-| GET | `/v1/feed/config` | client display timings |
+| GET | `/v1/feed/next` | deliver the next card, or `204` |
+| GET | `/v1/feed/peek` | preview the next card (non-consuming) |
+| POST | `/v1/feed/seen` | `{ id }` → mark seen |
+| GET | `/v1/feed/history?limit=` | recently seen cards |
+| GET | `/v1/lanes` | lanes you can see, with subscribe/mute state |
+| POST | `/v1/subscriptions` | `{ laneId, action }` — subscribe / unsubscribe / mute / unmute |
+| GET | `/v1/lanes/:id/feed.xml` | a lane as an RSS/Atom feed |
 
-**Producer** (`Authorization: Bearer <publisher_key>`, scoped to lanes you own):
+**Producer** (`Authorization: Bearer <token>`, scoped to lanes you own):
 
 | method | path | purpose |
 |--------|------|---------|
 | POST | `/v1/lanes` | create/update a lane |
 | POST | `/v1/lanes/:id/cards` | push a card |
-| POST | `/v1/keys` | mint another publisher key for your owner |
-
-Push a card:
+| POST | `/v1/tokens` | (session) mint a bearer token · `/v1/keys` mints another for the same owner |
 
 ```bash
 curl -X POST localhost:4000/v1/lanes/personal/cards \
   -H "Authorization: Bearer $WHILEAWAY_KEY" -H "Content-Type: application/json" \
-  -d '{
-    "title": "Standup in 10 min",
-    "body": "Daily · Google Meet",
-    "url": "https://meet.google.com/...",
-    "kind": "calendar",
-    "dedupe_key": "cal:evt:abc",
-    "delivery": { "class": "must_see", "priority": 90, "expires_at": "2026-06-22T10:30:00Z" }
-  }'
+  -d '{"title":"Standup in 10 min","body":"Daily · Google Meet","kind":"calendar",
+       "delivery":{"class":"must_see","priority":90}}'
 ```
 
-## Write your own pusher
+## Architecture
 
-That's the whole point — whileaway stays out of the integration business; you push what you care
-about. Create a lane once, then push to it on a cron from anywhere (a script, a Lambda, a
-Shortcut). Anything that produces the card shape above works — your read-later queue, a Twitter
-list you export, your home automation, a teammate's announcements. See
-[`server/clients/runner.js`](server/clients/runner.js) for a ~40-line reference.
+```
+                       hosted: whileaway.fly.dev            self-host: localhost:4000
+┌─────────────┐  MCP (stdio)  ┌──────────────────────────────────────────┐
+│ Claude/agent│──────────────▶│  whileaway-mcp  ──HTTP──▶  server (Express)│
+└─────────────┘   push_card   └──────────────────────────────────────────┘
+                                     ▲                        │
+┌─────────────┐  GET /v1/feed/next   │        SQLite (hosted) │ JSON file (self-host)
+│ any surface │──────────────────────┘
+└─────────────┘  overlay · new-tab · dashboard · RSS · your own
+```
 
-## Host it (optional)
-
-It's just Node — run it anywhere. A `Dockerfile` and `fly.toml` are included for Fly.io (scales to
-zero when idle). Paste your `https://<app>.fly.dev` into the popup's **Backend** field.
+`server/` (delivery engine + HTTP), `mcp/` (the MCP server), `extension/` (MV3: overlay + new-tab +
+popup), `server/public/` (landing + connect page). Deploy runbook: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## Contributing
 
-PRs welcome — a new reference pusher is the easiest start (one file in `server/clients/sources/`).
-Keep the privacy stance intact: the bus never fetches page content, and consumers stay in full
-control of what can reach them.
+A new reference pusher is the easiest start (one file in `server/clients/sources/`). Keep the
+privacy stance intact: the server never fetches page content, and only you publish to your feed.
 
 ## License
 

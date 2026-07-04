@@ -202,6 +202,19 @@ test("two owners can each hold a same-named lane without colliding", () => {
   assert.equal(bus.next("bob").title, "hola from bob");
 });
 
+// --- RSS/Atom out: laneCards (T-53) -----------------------------------------
+test("laneCards returns a lane's cards newest-first and drops expired ones", () => {
+  const c = setup(); // lane "c1"
+  push(c, { title: "old" });
+  push(c, { title: "new" });
+  push(c, { title: "stale", delivery: { expires_at: "2000-01-01T00:00:00.000Z" } });
+  const cards = bus.laneCards(bus.laneId(OWNER, c));
+  assert.equal(cards.length, 2); // expired "stale" dropped
+  assert.equal(cards[0].title, "new"); // newest first
+  assert.equal(cards[1].title, "old");
+  assert.equal(bus.laneCards("nobody:nolane").length, 0); // unknown lane → empty
+});
+
 // --- ownership guard on push ------------------------------------------------
 test("you cannot push into another owner's lane — refs resolve within your own namespace", () => {
   const c = setup(); // lane "c1" owned by OWNER

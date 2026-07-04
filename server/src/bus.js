@@ -353,6 +353,21 @@ export function history(userId, limit = 50) {
   return (db.history[userId] || []).slice(0, limit);
 }
 
+// A lane's cards, newest first — for surface-agnostic renders like RSS/Atom out (T-53). Expired
+// cards are dropped (they're not deliverable anywhere). Does not touch delivery state.
+export function laneCards(id, limit = 50) {
+  const ids = db.cardsByLane[id] || [];
+  const now = Date.now();
+  const out = [];
+  for (let i = ids.length - 1; i >= 0 && out.length < limit; i--) {
+    const c = db.cards[ids[i]];
+    if (!c) continue;
+    if (c.expiresAt && new Date(c.expiresAt).getTime() < now) continue;
+    out.push(c);
+  }
+  return out;
+}
+
 // Attach lane display info (label/accent) so the client doesn't need a second lookup.
 function decorate(it) {
   const ch = db.lanes[it.laneId] || {};

@@ -159,6 +159,34 @@ app.get("/v1/feed/peek", wrap((req, res) => {
 app.post("/v1/feed/seen", wrap((req) => bus.markSeen(user(req), (req.body || {}).id || (req.body || {}).itemId)));
 app.get("/v1/feed/history", wrap((req) => ({ cards: bus.history(user(req), Number(req.query.limit) || 50) })));
 
+// ---- surface-agnostic: RSS/Atom out (T-53) -------------------------------
+// A lane rendered as an Atom feed — proof the feed outlives our own clients. Public lanes serve
+// anonymously (the "subscribe to it in any reader" demo); private/unlisted need a bearer token
+// that can see the lane (header only — we never accept a token in the URL). Self-host is open.
+function xmlEsc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function renderAtom(lane, cards, origin) {
+  const self = `${origin}/v1/lanes/${encodeURIComponent(lane.id)}/feed.xml`;
+  const updated = (cards[0] ? new Date(cards[0].createdAt) : new Date()).toISOString();
+  const entries = cards.map((c) => {
+    const link = c.url ? `<link href="${xmlEsc(c.url)}"/>` : "";
+    const content = c.body ? `<content type="text">${xmlEsc(c.body)}</content>` : "";
+    return `<entry><title>${xmlEsc(c.title)}</title><id>urn:whileaway:${xmlEsc(c.id)}</id><updated>${new Date(c.createdAt).toISOString()}</updated>${link}${content}</entry>`;
+  }).join("");
+  return `<?xml version="1.0" encoding="utf-8"?>\n<feed xmlns="http://www.w3.org/2005/Atom"><title>${xmlEsc(lane.title)}</title><id>urn:whileaway:lane:${xmlEsc(lane.id)}</id><link rel="self" href="${xmlEsc(self)}"/><updated>${updated}</updated>${entries}</feed>`;
+}
+app.get("/v1/lanes/:id/feed.xml", (req, res) => {
+  const lane = bus.getLane(req.params.id);
+  if (!lane) return void res.status(404).type("text/plain").send("no such lane");
+  if (AUTH_MODE === "hosted" && lane.visibility !== "public") {
+    const auth = bus.resolveToken(bearer(req));
+    if (!bus.laneVisibleTo(auth ? auth.userId : "", lane.id, auth && auth.ownerId)) {
+      return void res.status(401).type("text/plain").send("private lane — provide a bearer token that can see it");
+    }
+  }
+  const origin = `${req.protocol}://${req.get("host")}`;
+  res.type("application/atom+xml").send(renderAtom(lane, bus.laneCards(lane.id, 50), origin));
+});
+
 // ---- consumer: lanes + subscriptions (directory) -------------------------
 app.get("/v1/lanes", wrap((req) => ({ lanes: bus.listLanes(user(req)) })));
 app.post("/v1/subscriptions", wrap((req) => {

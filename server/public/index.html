@@ -3,306 +3,171 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>whileaway · API</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>whileaway — connect your feed</title>
 <style>
   :root{
-    --bg:#fbfaf8; --panel:#fff; --ink:#1a1922; --ink2:#3d3b47; --muted:#7a7884; --faint:#a6a4b0;
-    --line:#ecebe5; --line2:#e3e1da; --accent:#5b50e0; --accent-soft:#efeefc;
-    --code-bg:#17161f; --code-line:#26242f; --code-ink:#cecbdd; --code-dim:#6f6c80; --code-str:#9ce0b4;
-    --get:#1f9d6b; --post:#5b50e0; --del:#d9534f; --ok:#1f9d6b; --bad:#d9534f;
-    --r:9px;
+    --ink:#17162e; --ink2:#3a3950; --muted:#6b6a82; --faint:#9997ac;
+    --line:rgba(23,22,46,0.10); --line2:rgba(23,22,46,0.16); --accent:#7c6cff; --accent-soft:#efedff;
+    --panel:#fff; --ok:#34a56b; --bad:#ec5b5b;
+    --code-bg:#17162a; --code-ink:#d7d4ea; --code-str:#9ce0b4; --code-dim:#6f6c88;
+    --r:13px;
   }
   *{box-sizing:border-box}
-  html,body{margin:0}
-  body{font-family:'Hanken Grotesk',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--ink);
-    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
-  code,kbd,pre,.mono{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace}
+  body{margin:0;font-family:'DM Sans',system-ui,-apple-system,sans-serif;color:var(--ink);
+    background:linear-gradient(170deg,#f7f6ff 0%,#eef0fb 100%);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased}
+  code,pre,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,'JetBrains Mono',monospace}
   a{color:var(--accent);text-decoration:none}
-  button{font-family:inherit;cursor:pointer}
-  .app{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+  main{max-width:660px;margin:0 auto;padding:40px 20px 72px}
 
-  /* sidebar */
-  aside{border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:0;height:100vh;background:var(--panel)}
-  .brand{display:flex;align-items:center;gap:9px;padding:2px 8px 20px}
-  .mark{width:25px;height:25px;border-radius:7px;background:var(--ink);position:relative;flex:none}
-  .mark::before{content:"";position:absolute;left:6px;right:6px;top:7px;height:2px;border-radius:2px;background:#fff;box-shadow:0 4px 0 #fff,0 8px 0 rgba(255,255,255,.5)}
-  .brand b{font-size:15.5px;font-weight:700;letter-spacing:-.01em}
-  .navgrp{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);font-weight:600;margin:18px 10px 5px}
-  nav button{display:block;width:100%;text-align:left;border:none;background:none;color:var(--ink2);
-    padding:7px 10px;border-radius:7px;font-size:13.5px;font-weight:500}
-  nav button:hover{background:#f2f1ec}
-  nav button.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
-  .side-foot{position:absolute;bottom:16px;left:14px;right:14px;font-size:11px;color:var(--muted)}
-  .env{display:flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg)}
-  .dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
+  header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .logo{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#7c6cff,#3a86ff);flex:none}
+  h1{font-size:19px;font-weight:700;margin:0;letter-spacing:-.01em}
+  .status{margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .dot{width:8px;height:8px;border-radius:50%;background:#c9c7d6;flex:none}
   .dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)}
-  .env .mono{font-size:10.5px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tagline{color:var(--muted);font-size:14.5px;margin:0 0 26px}
 
-  /* main */
-  main{padding:38px 46px;max-width:1080px;animation:fade .4s ease}
-  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  .panel{display:none} .panel.on{display:block}
-  .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);font-weight:600;margin-bottom:9px}
-  h1{font-size:25px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
-  .lede{color:var(--muted);font-size:14.5px;margin:0 0 26px;max-width:60ch}
-  h2{font-size:15px;font-weight:600;letter-spacing:-.01em;margin:34px 0 12px}
-  .hr{height:1px;background:var(--line);margin:30px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 18px;margin-bottom:16px}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 4px;font-weight:700}
+  .card .sub{font-size:13px;color:var(--muted);margin:0 0 13px}
+  .step{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;
+    background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:700;margin-right:7px;vertical-align:1px}
 
-  /* endpoint header */
-  .ep{display:flex;align-items:center;gap:10px;margin:0 0 20px;padding:11px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
-  .method{font-family:'JetBrains Mono';font-size:11px;font-weight:500;padding:3px 8px;border-radius:5px;letter-spacing:.03em}
-  .method.get{color:var(--get);background:#e7f6ee} .method.post{color:var(--post);background:var(--accent-soft)} .method.del{color:var(--del);background:#fbecec}
-  .ep code{font-size:13px;color:var(--ink2)}
-
-  /* cards / grid */
-  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-  .stat{border:1px solid var(--line);border-radius:var(--r);padding:15px 16px;background:var(--panel)}
-  .stat .n{font-family:'JetBrains Mono';font-size:23px;font-weight:500;letter-spacing:-.02em}
-  .stat .l{font-size:12px;color:var(--muted);margin-top:3px}
-  .card{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);padding:18px}
-
-  /* split: builder + rail */
-  .split{display:grid;grid-template-columns:1fr 420px;gap:22px;align-items:start}
-  .rail{position:sticky;top:24px;display:flex;flex-direction:column;gap:12px}
-
-  /* form */
-  .field{margin-bottom:14px}
   label{display:block;font-size:12.5px;font-weight:600;color:var(--ink2);margin-bottom:5px}
-  label .opt{color:var(--faint);font-weight:400}
-  input,select,textarea{width:100%;padding:8px 11px;border:1px solid var(--line2);border-radius:7px;font:inherit;font-size:13.5px;background:var(--panel);color:var(--ink);transition:border-color .12s,box-shadow .12s}
-  input::placeholder,textarea::placeholder{color:var(--faint)}
-  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-  textarea{resize:vertical;min-height:58px}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-  .range{display:flex;align-items:center;gap:10px}
-  .range input{padding:0} .range .mono{font-size:12px;color:var(--muted);min-width:24px;text-align:right}
+  input[type=text],input[type=email]{width:100%;padding:9px 11px;border:1px solid var(--line2);border-radius:9px;
+    font:inherit;font-size:13.5px;background:#fff;color:var(--ink)}
+  input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .row{display:flex;gap:8px;align-items:center}
+  .row input{flex:1}
+  .mono-in{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
 
-  /* code panel */
-  .codecard{border-radius:10px;overflow:hidden;background:var(--code-bg);border:1px solid var(--code-line)}
-  .codetabs{display:flex;align-items:center;gap:2px;padding:7px 8px;border-bottom:1px solid var(--code-line)}
-  .codetabs button{background:none;border:none;color:var(--code-dim);font-family:'JetBrains Mono';font-size:11.5px;padding:4px 9px;border-radius:6px}
-  .codetabs button:hover{color:var(--code-ink)} .codetabs button.on{color:var(--code-ink);background:#26242f}
-  .copy{margin-left:auto;display:flex;align-items:center;gap:5px;color:var(--code-dim) !important}
-  .copy:hover{color:#fff !important}
-  pre.code{margin:0;padding:14px 15px;font-family:'JetBrains Mono';font-size:12px;line-height:1.65;color:var(--code-ink);overflow:auto;white-space:pre}
+  button{font-family:inherit;font-size:13px;font-weight:600;border:none;border-radius:9px;cursor:pointer;
+    padding:9px 14px;background:var(--accent);color:#fff;transition:filter .15s}
+  button:hover{filter:brightness(1.05)}
+  button.ghost{background:var(--accent-soft);color:var(--accent)}
+  button.mini{padding:7px 11px;font-size:12px}
+  button:disabled{opacity:.5;cursor:default}
+  .hint{font-size:12px;color:var(--muted);margin-top:9px}
+  .hidden{display:none}
+
+  pre.code{margin:0;background:var(--code-bg);color:var(--code-ink);border-radius:10px;padding:13px 14px;
+    font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre}
   pre.code .s{color:var(--code-str)} pre.code .dim{color:var(--code-dim)}
+  .codehead{display:flex;align-items:center;gap:8px;margin:14px 0 7px}
+  .codehead .t{font-size:12.5px;font-weight:600;color:var(--ink2)}
+  .codehead button{margin-left:auto}
 
-  /* response */
-  .resp{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
-  .resp-head{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted);font-weight:600}
-  .pill{font-family:'JetBrains Mono';font-size:10.5px;padding:2px 7px;border-radius:5px;background:#f0efe9;color:var(--muted)}
-  .pill.ok{background:#e7f6ee;color:var(--ok)} .pill.bad{background:#fbecec;color:var(--bad)}
-  pre.resp-body{margin:0;padding:12px 14px;font-family:'JetBrains Mono';font-size:11.5px;line-height:1.6;color:var(--ink2);overflow:auto;max-height:240px;white-space:pre-wrap;word-break:break-word}
+  .lane{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px}
+  .lane:first-of-type{border-top:none}
+  .lane .nm{font-weight:600}
+  .lane .meta{font-size:11px;color:var(--faint)}
+  .lane .grow{flex:1;min-width:0}
+  .switch{position:relative;width:36px;height:20px;flex:none}
+  .switch input{opacity:0;width:0;height:0}
+  .slider{position:absolute;inset:0;background:#cfceda;border-radius:20px;transition:.2s;cursor:pointer}
+  .slider:before{content:"";position:absolute;width:16px;height:16px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.2s}
+  .switch input:checked + .slider{background:var(--accent)}
+  .switch input:checked + .slider:before{transform:translateX(16px)}
+  .mutelink{font-size:11px;color:var(--accent);cursor:pointer;font-weight:600}
+  .mutelink.muted{color:var(--bad)}
 
-  /* tables */
-  table{width:100%;border-collapse:collapse;font-size:13.5px}
-  .params th,.tbl th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line)}
-  .params td,.tbl td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
-  .params tr:last-child td,.tbl tr:last-child td{border-bottom:none}
-  .params .pname{font-family:'JetBrains Mono';font-size:12.5px;color:var(--ink)}
-  .params .ptype{font-family:'JetBrains Mono';font-size:11px;color:var(--muted)}
-  .params .req{font-size:10px;color:var(--del);font-weight:600;margin-left:6px;letter-spacing:.03em}
-  .params .pdesc{color:var(--ink2);font-size:13px}
-  .tbl{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--panel)}
-  .tbl td .mono{font-size:11.5px;color:var(--muted)}
-  .tag{display:inline-block;font-family:'JetBrains Mono';font-size:11px;padding:2px 8px;border-radius:20px;background:#f0efe9;color:var(--muted)}
-  .tag.pub{background:#e7f6ee;color:var(--get)} .tag.priv{background:var(--accent-soft);color:var(--accent)} .tag.unl{background:#fff3e6;color:#c8702a}
+  .hitem{padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+  .hitem:first-child{border-top:none}
+  .hitem .hsrc{color:var(--accent);font-weight:600}
+  .hitem .hwhen{color:var(--faint);font-size:11px}
+  .empty{font-size:13px;color:var(--muted);line-height:1.5}
+  .empty code{background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:5px;font-size:12px}
 
-  /* buttons */
-  .btn{font-size:13px;font-weight:600;border:1px solid transparent;border-radius:7px;padding:8px 14px;background:var(--ink);color:#fff;transition:opacity .12s}
-  .btn:hover{opacity:.88}
-  .btn.ghost{background:var(--panel);border-color:var(--line2);color:var(--ink2)}
-  .btn.ghost:hover{background:#f4f3ee;opacity:1}
-  .btn.sm{padding:5px 11px;font-size:12px;font-weight:500}
-  .btn.link{background:none;border:none;color:var(--accent);padding:4px 6px;font-weight:600}
-  .right{display:flex;justify-content:flex-end}
-  .muted{color:var(--muted)}
-  .keyrow{display:flex;gap:8px;align-items:center}
-  .keyrow input{font-family:'JetBrains Mono';font-size:12.5px}
-  .note{font-size:12.5px;color:var(--muted);margin-top:9px}
-  .toast{position:fixed;right:22px;bottom:22px;background:var(--ink);color:#fff;padding:10px 15px;border-radius:8px;font-size:13px;opacity:0;transform:translateY(8px);transition:.22s;z-index:20}
-  .toast.show{opacity:1;transform:none}
-  @media(max-width:920px){.split{grid-template-columns:1fr}.rail{position:static}.cards{grid-template-columns:1fr 1fr}}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,10px);background:var(--ink);color:#fff;
+    padding:10px 16px;border-radius:9px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:20}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  footer{text-align:center;color:var(--faint);font-size:12px;margin-top:26px}
+  footer a{color:var(--muted)}
 </style>
 </head>
 <body>
-<div class="app">
-  <aside>
-    <div class="brand"><div class="mark"></div><b>whileaway</b></div>
-    <nav id="nav">
-      <button data-tab="overview" class="on">Overview</button>
-      <div class="navgrp">Resources</div>
-      <button data-tab="channels">Channels</button>
-      <button data-tab="items">Items</button>
-      <button data-tab="feed">Feed</button>
-      <div class="navgrp">Developers</div>
-      <button data-tab="keys">API keys</button>
-      <button data-tab="settings">Settings</button>
-    </nav>
-    <div class="side-foot">
-      <div class="env"><span class="dot" id="dot"></span><span class="mono" id="envBase">…</span></div>
+<main>
+  <header>
+    <div class="logo"></div>
+    <h1>whileaway</h1>
+    <div class="status"><span class="dot" id="dot"></span><span id="statusText">…</span></div>
+  </header>
+  <p class="tagline">The feed only you can publish to. Connect your agent below.</p>
+
+  <!-- LOADING -->
+  <div id="loading" class="card"><div class="empty">Loading…</div></div>
+
+  <!-- SIGN IN (hosted, not authed) -->
+  <section id="signin" class="hidden">
+    <div class="card">
+      <h2>Start your feed</h2>
+      <p class="sub">Sign in with a magic link. No password.</p>
+      <label for="email">Email</label>
+      <div class="row">
+        <input type="email" id="email" placeholder="you@example.com" autocomplete="email" />
+        <button id="sendLink">Send link</button>
+      </div>
+      <p class="hint" id="signinHint"></p>
     </div>
-  </aside>
+  </section>
 
-  <main>
-    <!-- OVERVIEW -->
-    <section class="panel on" data-panel="overview">
-      <div class="eyebrow">API</div>
-      <h1>whileaway</h1>
-      <p class="lede">A push API for ambient cards. Producers push items onto channels; consumers subscribe and the delivery engine serves one card at a time. The interface below is just a thin client over the same REST API.</p>
-      <div class="cards">
-        <div class="stat"><div class="n" id="s_channels">—</div><div class="l">Channels</div></div>
-        <div class="stat"><div class="n" id="s_items">—</div><div class="l">Items</div></div>
-        <div class="stat"><div class="n" id="s_subs">—</div><div class="l">Subscriptions</div></div>
-        <div class="stat"><div class="n" id="s_hist">—</div><div class="l">Delivered</div></div>
+  <!-- CONNECTED -->
+  <section id="connected" class="hidden">
+    <!-- token -->
+    <div class="card">
+      <h2><span class="step">1</span>Your access token</h2>
+      <p class="sub">One secret that lets your agent (and the extension) reach your feed. Treat it like a password.</p>
+      <div class="row">
+        <input type="text" id="tokenVal" class="mono-in" readonly placeholder="no token yet" />
+        <button id="copyToken" class="ghost mini">Copy</button>
       </div>
-      <h2>Quick start</h2>
-      <p class="muted" style="margin:-4px 0 14px;font-size:13.5px">Push your first item. Authenticate with your publisher key.</p>
-      <div class="codecard" id="qsCode">
-        <div class="codetabs" data-code="qs"></div>
-        <pre class="code"></pre>
-      </div>
-    </section>
+      <button id="mintToken" class="mini hidden" style="margin-top:10px">Generate token</button>
+      <p class="hint" id="tokenHint"></p>
+    </div>
 
-    <!-- CHANNELS -->
-    <section class="panel" data-panel="channels">
-      <div class="eyebrow">Resource</div>
-      <h1>Channels</h1>
-      <p class="lede">A channel is a named stream you push items onto. Consumers subscribe to the ones they want.</p>
-      <div class="ep"><span class="method get">GET</span><code>/v1/channels</code></div>
-      <div class="tbl"><table>
-        <thead><tr><th>Channel</th><th>Kind</th><th>Visibility</th><th>Subscription</th><th></th></tr></thead>
-        <tbody id="chRows"></tbody>
-      </table></div>
-
-      <h2>Create a channel</h2>
-      <div class="ep"><span class="method post">POST</span><code>/v1/channels</code></div>
-      <div class="split">
-        <div>
-          <div class="grid2">
-            <div class="field"><label>id <span class="opt">/ slug</span></label><input id="nc_id" placeholder="reading-list" /></div>
-            <div class="field"><label>title</label><input id="nc_title" placeholder="Reading List" /></div>
-          </div>
-          <div class="field"><label>description <span class="opt">optional</span></label><input id="nc_desc" placeholder="Saved articles to skim" /></div>
-          <div class="grid3">
-            <div class="field"><label>kind</label><select id="nc_kind"><option>note</option><option>article</option><option>discussion</option><option>calendar</option><option>email</option><option>event</option></select></div>
-            <div class="field"><label>visibility</label><select id="nc_vis"><option>private</option><option>unlisted</option><option>public</option></select></div>
-            <div class="field"><label>accent</label><input id="nc_accent" type="color" value="#5b50e0" style="height:35px;padding:3px" /></div>
-          </div>
-          <h2 style="margin-top:24px">Parameters</h2>
-          <table class="params" id="chParams"></table>
-        </div>
-        <div class="rail">
-          <div class="codecard">
-            <div class="codetabs" data-code="ch"></div>
-            <pre class="code"></pre>
-          </div>
-          <div class="resp"><div class="resp-head">Response <span class="pill" id="ch_status">—</span></div><pre class="resp-body" id="ch_resp">// Send the request to see the response</pre></div>
-          <button class="btn" id="ch_send">Send request</button>
-        </div>
+    <!-- one-paste -->
+    <div class="card">
+      <h2><span class="step">2</span>Connect the extension</h2>
+      <p class="sub">Copy this one setup code and paste it into the whileaway browser extension — it fills in your URL and token in one step.</p>
+      <div class="row">
+        <input type="text" id="setupCode" class="mono-in" readonly />
+        <button id="copySetup" class="ghost mini">Copy code</button>
       </div>
-    </section>
+      <p class="hint">No extension yet? It shows a card in the seconds you wait on an AI. (Chrome Web Store link coming at launch.)</p>
+    </div>
 
-    <!-- ITEMS -->
-    <section class="panel" data-panel="items">
-      <div class="eyebrow">Resource</div>
-      <h1>Create an item</h1>
-      <p class="lede">Push a card onto a channel, with delivery semantics. Re-pushing the same <code class="mono">dedupe_key</code> upserts instead of duplicating.</p>
-      <div class="ep"><span class="method post">POST</span><code>/v1/channels/{channel}/items</code></div>
-      <div class="split">
-        <div>
-          <div class="field"><label>channel</label><select id="p_channel"></select></div>
-          <div class="field"><label>title <span class="req">REQUIRED</span></label><input id="p_title" placeholder="Standup in 10 minutes" /></div>
-          <div class="field"><label>body <span class="opt">optional</span></label><textarea id="p_body" placeholder="Daily · Google Meet"></textarea></div>
-          <div class="grid2">
-            <div class="field"><label>url <span class="opt">optional</span></label><input id="p_url" placeholder="https://…" /></div>
-            <div class="field"><label>image_url <span class="opt">optional</span></label><input id="p_img" placeholder="https://…" /></div>
-          </div>
-          <div class="grid2">
-            <div class="field"><label>kind</label><select id="p_kind"><option>note</option><option>article</option><option>discussion</option><option>calendar</option><option>email</option><option>event</option></select></div>
-            <div class="field"><label>dedupe_key <span class="opt">optional</span></label><input id="p_dedupe" placeholder="cal:evt:abc" /></div>
-          </div>
-          <h2 style="margin-top:8px">delivery</h2>
-          <div class="grid2">
-            <div class="field"><label>class</label><select id="p_class"><option value="ambient">ambient</option><option value="must_see">must_see</option></select></div>
-            <div class="field"><label>priority <span class="mono" id="p_prioVal" style="color:var(--muted)">50</span></label><div class="range"><input id="p_prio" type="range" min="0" max="100" value="50" /></div></div>
-          </div>
-          <div class="field"><label>expires_at <span class="opt">optional</span></label><input id="p_expires" type="datetime-local" /></div>
-          <div class="grid3">
-            <div class="field"><label>repeat.mode</label><select id="p_repeat"><option value="once">once</option><option value="recurring">recurring</option></select></div>
-            <div class="field"><label>cooldown_s</label><input id="p_cooldown" type="number" value="86400" /></div>
-            <div class="field"><label>max <span class="opt">∞</span></label><input id="p_max" type="number" placeholder="∞" /></div>
-          </div>
-          <h2 style="margin-top:24px">Parameters</h2>
-          <table class="params" id="itParams"></table>
-        </div>
-        <div class="rail">
-          <div class="codecard">
-            <div class="codetabs" data-code="it"></div>
-            <pre class="code"></pre>
-          </div>
-          <div class="resp"><div class="resp-head">Response <span class="pill" id="it_status">—</span></div><pre class="resp-body" id="it_resp">// Send the request to see the response</pre></div>
-          <button class="btn" id="it_send">Send request</button>
-        </div>
-      </div>
-    </section>
+    <!-- mcp -->
+    <div class="card">
+      <h2><span class="step">3</span>Connect your agent</h2>
+      <p class="sub">Point your MCP client at your feed, then just tell it what to send you.</p>
+      <div class="codehead"><span class="t">Claude Code / Claude Desktop</span><button class="ghost mini" data-copy="mcpCli">Copy</button></div>
+      <pre class="code" id="mcpCli"></pre>
+      <div class="codehead"><span class="t">Other MCP clients (JSON)</span><button class="ghost mini" data-copy="mcpJson">Copy</button></div>
+      <pre class="code" id="mcpJson"></pre>
+      <p class="hint">Then say: <i>“Add 20 cards teaching me basic Spanish greetings to my whileaway, spaced over two weeks.”</i></p>
+    </div>
 
-    <!-- FEED -->
-    <section class="panel" data-panel="feed">
-      <div class="eyebrow">Consumer</div>
-      <h1>Feed</h1>
-      <p class="lede">The delivery engine returns the single best card for the calling consumer, or <code class="mono">204</code> when nothing is eligible. Identity comes from the <code class="mono">X-Whileaway-User</code> header.</p>
-      <div class="ep"><span class="method get">GET</span><code>/v1/feed/next</code></div>
-      <div class="split">
-        <div>
-          <table class="params" id="feedParams"></table>
-          <div style="margin-top:18px" class="keyrow">
-            <button class="btn" id="f_next">Send request</button>
-            <button class="btn ghost sm" id="f_seen">POST /feed/seen</button>
-          </div>
-        </div>
-        <div class="rail">
-          <div class="codecard">
-            <div class="codetabs" data-code="feed"></div>
-            <pre class="code"></pre>
-          </div>
-          <div class="resp"><div class="resp-head">Response <span class="pill" id="f_status">—</span></div><pre class="resp-body" id="f_resp">// Send the request to see the response</pre></div>
-        </div>
-      </div>
-    </section>
+    <!-- is it working -->
+    <div class="card">
+      <h2>Is it working?</h2>
+      <p class="sub">The last cards delivered to your feed. This updates as your agent pushes and as you view cards.</p>
+      <div id="history"><div class="empty">…</div></div>
+    </div>
 
-    <!-- API KEYS -->
-    <section class="panel" data-panel="keys">
-      <div class="eyebrow">Developers</div>
-      <h1>API keys</h1>
-      <p class="lede">Producer requests authenticate with a publisher key, scoped to the channels its owner controls. Send it as a bearer token.</p>
-      <div class="card">
-        <label>Publisher key</label>
-        <div class="keyrow"><input id="keyVal" readonly /><button class="btn ghost sm" id="copyKey">Copy</button></div>
-        <p class="note" id="keyNote"></p>
-      </div>
-      <h2>Authentication</h2>
-      <div class="codecard"><div class="codetabs" data-code="auth"></div><pre class="code"></pre></div>
-    </section>
+    <!-- lanes -->
+    <div class="card">
+      <h2>Your lanes</h2>
+      <p class="sub">Streams in your feed. Mute anything you don't want right now.</p>
+      <div id="lanes"><div class="empty">…</div></div>
+    </div>
 
-    <!-- SETTINGS -->
-    <section class="panel" data-panel="settings">
-      <div class="eyebrow">Developers</div>
-      <h1>Settings</h1>
-      <p class="lede">Point the console at a bus and set the publisher key used for write requests.</p>
-      <div class="card">
-        <div class="field"><label>Base URL</label><input id="set_base" class="mono" placeholder="http://localhost:4000" /></div>
-        <div class="field"><label>Publisher key <span class="opt">stored locally in this browser</span></label><input id="set_key" class="mono" placeholder="vf_pk_…" /></div>
-        <div class="field"><label>Consumer identity <span class="opt">X-Whileaway-User</span></label><input id="set_user" class="mono" readonly /></div>
-        <button class="btn" id="set_save">Save</button>
-      </div>
-    </section>
-  </main>
-</div>
+    <p class="hint" id="signoutRow" style="text-align:center"></p>
+  </section>
+
+  <footer>
+    the feed only you can publish to · <a href="/privacy">privacy</a>
+  </footer>
+</main>
 <div class="toast" id="toast"></div>
 <script src="app.js"></script>
 </body>

@@ -176,6 +176,26 @@ $("saveToken").addEventListener("click", async () => {
   await refreshStatus(); loadChannels(); doPreview(); // renders a preview within seconds of a valid token
 });
 
+// One-paste connect (T-33): decode a `wa1:<base64 {url,token}>` setup code from the dashboard and
+// apply both the backend URL and token in a single action — the flabbiest onboarding step, halved.
+function parseSetupCode(raw) {
+  const s = (raw || "").trim();
+  if (!s.startsWith("wa1:")) return null;
+  try { const o = JSON.parse(atob(s.slice(4))); if (o && typeof o.url === "string") return { url: o.url, token: o.token || "" }; } catch (_) {}
+  return null;
+}
+$("applySetup").addEventListener("click", async () => {
+  const parsed = parseSetupCode($("setupCode").value);
+  if (!parsed) return; // silently ignore junk; the field placeholder shows the expected shape
+  state.base = parsed.url.replace(/\/$/, "");
+  state.token = parsed.token || null;
+  await api.storage.local.set({ vf_api_base: state.base });
+  if (state.token) await api.storage.local.set({ vf_token: state.token }); else await api.storage.local.remove("vf_token");
+  await api.storage.local.remove("vf_cfg"); // refetch the new backend's display config
+  $("apiBase").value = state.base; $("token").value = state.token || ""; $("setupCode").value = "";
+  await refreshStatus(); loadChannels(); doPreview();
+});
+
 $("previewBtn").addEventListener("click", doPreview);
 
 $("showBtn").addEventListener("click", async () => {

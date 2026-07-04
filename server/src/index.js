@@ -123,7 +123,9 @@ app.get("/v1/admin/hello", (req, res) => {
   if (!loopback) return res.status(403).json({ error: "loopback only" });
   res.json({ base: `http://localhost:${PORT}`, key: DEFAULT_KEY });
 });
-app.get("/v1/feed/config", (_req, res) => res.json(bus.CONFIG));
+// Public client-config probe. authMode lets the connect page decide whether to show sign-in
+// (hosted) or go straight to the self-host view (none). No secrets here.
+app.get("/v1/feed/config", (_req, res) => res.json({ ...bus.CONFIG, authMode: AUTH_MODE }));
 
 // Activation & seen-rate funnel (T-63). Aggregate-only (no per-user rows), but the totals still
 // reveal user/lane counts, so hosted mode requires a dedicated ops token (WHILEAWAY_METRICS_TOKEN)

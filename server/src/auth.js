@@ -11,6 +11,7 @@ import Database from "better-sqlite3";
 import { betterAuth } from "better-auth";
 import { magicLink } from "better-auth/plugins";
 import * as bus from "./bus.js";
+import { bump } from "./metrics.js";
 
 const AUTH_DB = process.env.WHILEAWAY_AUTH_DB || path.join(process.cwd(), ".whileaway-auth.db");
 // Required in hosted mode (this module only loads when AUTH_MODE=hosted). Fail closed rather than
@@ -41,6 +42,7 @@ export function provisionUser(userId, label) {
   bus.ensureOwner(userId, label || userId);
   bus.ensureUser(userId); // seed public starter channels
   bus.createChannel({ id: "personal", title: "Personal", visibility: "private", kind: "note" }, userId);
+  bump("signups"); // top of the activation funnel (T-63)
 }
 
 export const auth = betterAuth({

@@ -6,7 +6,7 @@ import Database from "better-sqlite3";
 import path from "node:path";
 
 // The db shape's top-level maps (see store.js). Each is persisted as its own table.
-const COLLECTIONS = ["owners", "keys", "channels", "items", "itemsByChannel", "subs", "delivery", "history", "cursor"];
+const COLLECTIONS = ["owners", "keys", "channels", "items", "itemsByChannel", "subs", "delivery", "history", "cursor", "metrics"];
 
 export class SqliteDriver {
   constructor(file = process.env.WHILEAWAY_STATE || path.join(process.cwd(), ".whileaway.db")) {

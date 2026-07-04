@@ -1,6 +1,9 @@
-# Fly.io config for the whileaway bus.
+# Fly.io config for the whileaway bus (hosted instance). One-time setup:
 #   fly apps create whileaway-bus
+#   fly volumes create whileaway_data --size 1 --region iad --app whileaway-bus -y
+#   fly secrets set WHILEAWAY_AUTH_SECRET=$(openssl rand -hex 32) --app whileaway-bus
 #   fly secrets set WHILEAWAY_KEY=$(openssl rand -hex 18) --app whileaway-bus
+#   fly secrets set WHILEAWAY_METRICS_TOKEN=$(openssl rand -hex 24) --app whileaway-bus
 #   fly deploy --app whileaway-bus --ha=false
 app = "whileaway-bus"
 primary_region = "iad"
@@ -8,25 +11,34 @@ primary_region = "iad"
 [build]
   dockerfile = "Dockerfile"
 
+# Single volume-backed machine: a rolling deploy can't start a second machine on the one volume
+# (it's locked by the running machine), so replace in place. Brief downtime on deploy is fine at v0.
+[deploy]
+  strategy = "immediate"
+
 [env]
   PORT = "8080"
+  AUTH_MODE = "hosted"
+  WHILEAWAY_URL = "https://whileaway-bus.fly.dev"
+  # Durable state on the mounted volume: our bus store (sqlite) + Better Auth's own DB.
+  WHILEAWAY_STORE = "sqlite"
+  WHILEAWAY_STATE = "/data/whileaway.db"
+  WHILEAWAY_AUTH_DB = "/data/whileaway-auth.db"
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
-  auto_start_machines = true
-  min_machines_running = 0
+  # Single stateful machine backed by a volume: keep exactly one always-on. Cold starts would
+  # kill the product (the feed must answer instantly), and auto-stop + a volume risks the machine
+  # sleeping mid-write.
+  auto_stop_machines = "off"
+  auto_start_machines = false
+  min_machines_running = 1
 
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "256mb"
+  memory = "512mb"
 
-# State is in-memory here (ephemeral): default channels/subscriptions are re-seeded on boot and
-# the pushers repopulate content, so the demo self-heals on restart. For durable custom channels/
-# subscriptions, add a volume and uncomment the mount below:
-#   fly volumes create whileaway_data --size 1 --region iad --app whileaway-bus
-# [env] WHILEAWAY_STATE = "/data/.whileaway-state.json"
-# [[mounts]]
-#   source = "whileaway_data"
-#   destination = "/data"
+[[mounts]]
+  source = "whileaway_data"
+  destination = "/data"

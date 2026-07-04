@@ -26,6 +26,7 @@ export const db = {
   delivery: {}, // `${userId}|${itemId}` -> { deliveredCount, lastDeliveredAt, seenAt }
   history: {}, // userId -> [ {item snapshot, seenAt}, ... ] newest first
   cursor: {}, // userId -> { lastChannelId }  (for round-robin fairness)
+  metrics: {}, // counterName -> integer (activation/seen-rate counters, T-63)
 };
 
 const MAX_ITEMS_PER_CHANNEL = 250;
@@ -40,6 +41,15 @@ let saveTimer = null;
 export function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => driver.save(db), 300);
+}
+
+// Force a synchronous write of the current state, cancelling any pending debounce. Call this on
+// process shutdown (SIGTERM/SIGINT) so a mutation made in the last 300ms before Fly stops the
+// machine (e.g. a signup's owner/lane/subs) isn't lost with the debounce timer.
+export function flush() {
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  try { driver.save(db); } catch (e) { console.warn("[whileaway] flush failed:", e.message); }
 }
 
 // Test-only: wipe all in-memory collections and cancel any pending write so each test starts

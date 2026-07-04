@@ -4,13 +4,19 @@ Status: draft for build · Owner: Eric · Last updated: 2026-07-03
 
 ## 1. One-liner
 
-**whileaway is the feed only you can publish to** — delivered in the seconds you'd otherwise spend
-waiting on an AI. You tell your agent one sentence ("push me a stoic quote each morning, expire at
-noon"), and it fills your own idle moments. Not an ad, not someone else's algorithm — a channel
-where only you reach you.
+**whileaway is the feed only you can publish to** — the one channel where only you reach you. You
+tell your agent one sentence ("push me a stoic quote each morning, expire at noon") and it fills
+your feed. Not an ad, not someone else's algorithm.
 
-v0 is deliberately single-user: a self-hostable bus, a Chrome extension that renders one card while
-an AI generates, and an MCP server so your agent writes to your feed in one sentence.
+**Your feed is an API, not an app.** Every surface is a thin client of one endpoint
+(`GET /v1/feed/next`), so the same feed can land anywhere — a browser overlay, a new-tab page, a
+native app, RSS. **Launch surface #1 is the seconds you spend waiting on an AI** (a Chrome
+extension) — demoed hard, but we are *starting with* the spinner, not married to it. The delivery
+surface is orthogonal to the thesis.
+
+v0 is deliberately single-user: a self-hostable bus, an MCP server so your agent writes to your
+feed in one sentence, and thin clients that render it (the extension's spinner overlay + new-tab
+page, `demo.html`, and the dashboard's feed view — three renderers of one API).
 
 ### Why this, why now, and why it's defensible
 - **The self-feed is the one thing big platforms structurally won't build.** Every major platform's
@@ -29,8 +35,9 @@ an AI generates, and an MCP server so your agent writes to your feed in one sent
 - **Single-user is the thesis, not a compromise.** The future team feature is just "a recipe whose
   lane has two readers" — an extension, never a platform play.
 
-Positioning for launch: *"The feed only you can publish to."* (Secondary: *they're monetizing your
-AI wait time — put your own feed there instead.*)
+Positioning — thesis (surface-agnostic): *"The feed only you can publish to."* · Launch tagline:
+*"Starting with the seconds you spend waiting on an AI."* The AI-wait moment is the launch wedge,
+not the wall.
 
 ## 2. What v0 is (and is not)
 

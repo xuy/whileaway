@@ -11,12 +11,17 @@ function makeUser() {
 }
 const cfg = {
   base: (localStorage.getItem("vf_base") || location.origin || "http://localhost:4000").replace(/\/$/, ""),
-  token: localStorage.getItem("vf_token") || "",
+  token: "", // set per-mode in init(): hosted = the signed-in user's stored/minted token; self-host = boot key
   user: makeUser(),
   authMode: "none",
+  uid: "",
   email: "",
 };
 const url = (p) => cfg.base + p;
+// Hosted tokens are stored keyed to the signed-in user id, so a leftover token from a previous
+// user on a shared browser is never reused for a different account. Self-host tokens come fresh
+// from /v1/admin/hello each load, so they're not persisted here.
+const tokenStoreKey = () => (cfg.authMode === "hosted" && cfg.uid ? "vf_token:" + cfg.uid : null);
 
 // Identity headers per mode. Hosted: the bearer token names the user. Self-host: the browser id
 // header (the boot key is added as bearer too — harmless, it's ignored for identity in none mode).
@@ -48,7 +53,8 @@ async function refreshStatus() {
 // ---------- token ----------
 function setToken(t, note) {
   cfg.token = t || "";
-  if (t) localStorage.setItem("vf_token", t); else localStorage.removeItem("vf_token");
+  const k = tokenStoreKey();
+  if (k) { if (t) localStorage.setItem(k, t); else localStorage.removeItem(k); }
   $("tokenVal").value = t || "";
   $("mintToken").classList.toggle("hidden", !!t);
   if (note) $("tokenHint").textContent = note;
@@ -129,7 +135,7 @@ async function renderConnected() {
   $("signoutRow").innerHTML = cfg.authMode === "hosted"
     ? `Signed in${cfg.email ? " as " + esc(cfg.email) : ""} · <a href="#" id="signout">sign out</a>` : "Self-hosted — no account needed.";
   const so = $("signout");
-  if (so) so.addEventListener("click", async (e) => { e.preventDefault(); try { await fetch(url("/api/auth/sign-out"), { method: "POST", credentials: "same-origin" }); } catch (_) {} localStorage.removeItem("vf_token"); location.reload(); });
+  if (so) so.addEventListener("click", async (e) => { e.preventDefault(); const k = tokenStoreKey(); try { await fetch(url("/api/auth/sign-out"), { method: "POST", credentials: "same-origin" }); } catch (_) {} if (k) localStorage.removeItem(k); location.reload(); });
   renderSetup(); renderMcp();
   loadHistory(); loadLanes();
 }
@@ -162,10 +168,16 @@ $("email").addEventListener("keydown", (e) => { if (e.key === "Enter") $("sendLi
   await refreshStatus();
   try { const c = await apiGet("/v1/feed/config"); if (c.ok && c.body && c.body.authMode) cfg.authMode = c.body.authMode; } catch (_) {}
 
+  localStorage.removeItem("vf_token"); // drop any pre-per-user token from an earlier build
+
   if (cfg.authMode === "hosted") {
     const me = await apiGet("/v1/me"); // cookie session
-    if (me.ok && me.body && me.body.user) { cfg.email = me.body.user.email || ""; await renderConnected(); }
-    else show("signin");
+    if (me.ok && me.body && me.body.user) {
+      cfg.uid = me.body.user.id;
+      cfg.email = me.body.user.email || "";
+      cfg.token = localStorage.getItem(tokenStoreKey()) || ""; // this user's token on this browser, if any
+      await renderConnected();
+    } else show("signin");
   } else {
     // self-host: grab the boot publisher key (loopback only) so the token/snippets are prefilled.
     try { const r = await fetch(url("/v1/admin/hello")); if (r.ok) { const d = await r.json(); if (!cfg.token && d.key) cfg.token = d.key; if (d.base) cfg.base = d.base.replace(/\/$/, ""); } } catch (_) {}

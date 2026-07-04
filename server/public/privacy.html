@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>whileaway — Privacy Policy</title>
+  <style>
+    :root { --ink:#17162e; --muted:#5b5a72; --line:rgba(23,22,46,0.10); --accent:#7c6cff; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:'DM Sans',system-ui,-apple-system,sans-serif; color:var(--ink);
+      background:linear-gradient(170deg,#f7f6ff 0%,#eef0fb 100%); line-height:1.55; }
+    main { max-width:720px; margin:0 auto; padding:48px 22px 80px; }
+    h1 { font-size:30px; margin:0 0 6px; letter-spacing:-.01em; }
+    .sub { color:var(--muted); margin:0 0 32px; }
+    h2 { font-size:18px; margin:30px 0 8px; }
+    p, li { color:#26253d; }
+    ul { padding-left:20px; }
+    li { margin:5px 0; }
+    .lede { font-size:17px; background:rgba(124,108,255,0.08); border:1px solid var(--line);
+      border-radius:12px; padding:16px 18px; }
+    code { background:rgba(23,22,46,0.06); padding:1px 5px; border-radius:5px; font-size:13px; }
+    a { color:var(--accent); }
+    footer { margin-top:40px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>whileaway — Privacy Policy</h1>
+  <p class="sub">Last updated: 2026-07-04</p>
+
+  <p class="lede"><b>whileaway never reads your prompts, the AI's answers, the pages you visit, or
+  anything you type.</b> The extension only detects <em>when</em> an AI starts generating a
+  response, and shows one card you (or your agents) chose during that wait.</p>
+
+  <h2>What the extension does</h2>
+  <p>On supported AI sites, whileaway watches for a single UI signal — the appearance of the site's
+  "stop generating" control — to know a response is in progress. It does this by observing the
+  presence of that element, <b>not</b> by reading page text, prompts, responses, links, or form
+  values. When a generation starts, it fetches one card from the backend you configured and
+  displays it as a small overlay.</p>
+
+  <h2>What data is stored</h2>
+  <ul>
+    <li><b>In your browser only</b> (extension local storage): your backend URL, an optional access
+      token, and a random per-browser identifier used to keep your feed separate. This never leaves
+      your device except as described below.</li>
+    <li><b>Sent to the backend you configure:</b> requests for your next card, carrying your
+      per-browser identifier and (if set) your token. If you or your agents <em>push</em> cards, the
+      card content you send is stored on that backend. You choose the backend — self-host it, or use
+      the hosted instance.</li>
+  </ul>
+
+  <h2>What we do NOT collect</h2>
+  <ul>
+    <li>No prompts, no AI responses, no page content, no browsing history.</li>
+    <li>No analytics, ad tracking, fingerprinting, or third-party trackers.</li>
+    <li>No selling or sharing of data with third parties.</li>
+  </ul>
+
+  <h2>Permissions, and why</h2>
+  <ul>
+    <li><code>storage</code> — save your settings (backend URL, token, browser id) locally.</li>
+    <li>Host access to supported AI sites — to detect generation start and render the card overlay
+      on the page. No page content is read or transmitted.</li>
+    <li>Host access to your backend URL — to fetch your feed and (optionally) push cards.</li>
+  </ul>
+
+  <h2>Self-hosting</h2>
+  <p>whileaway is open and self-hostable. If you run your own bus, your data lives entirely on your
+  infrastructure and this policy's "backend" is a server you control.</p>
+
+  <h2>Contact</h2>
+  <p>Questions: <a href="mailto:privacy@whileaway.app">privacy@whileaway.app</a>. Material changes to
+  this policy will be posted at this page with an updated date.</p>
+
+  <footer>whileaway · <a href="/">home</a></footer>
+</main>
+</body>
+</html>

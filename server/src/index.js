@@ -47,7 +47,7 @@ async function session(req) {
 app.use(express.json({ limit: "256kb" }));
 
 // Admin web console (static). Served at / — drives the same /v1 API you'd use programmatically.
-app.use(express.static(path.join(__dirname, "../public")));
+app.use(express.static(path.join(__dirname, "../public"), { extensions: ["html"] })); // /privacy → privacy.html
 
 app.use((req, res, next) => {
   res.set("Access-Control-Allow-Origin", "*");

@@ -69,9 +69,13 @@ cards aren't double-counted. Also: `signups`, `tokensMinted`, `pushes`, `deliver
 
 ## Pending (human-assisted)
 
-- **Email transport for public signup.** Magic links currently only print to the server log
-  (`sendMagicLink` in `server/src/auth.js`). Real users can't sign up until an email provider
-  (e.g. Resend) is wired. Until then, signup works only by reading the link from `fly logs`.
+- **Email transport for public signup.** The Resend integration is now **wired** in
+  `sendMagicLink` (`server/src/auth.js`); it's dormant until you set the key. To turn on public
+  email delivery: create a Resend account, verify a sending domain, then
+  `fly secrets set WHILEAWAY_RESEND_KEY=re_… WHILEAWAY_EMAIL_FROM='whileaway <login@yourdomain>' --app whileaway`.
+  Without the key, links still print to `fly logs` (fail-safe fallback). The default
+  `WHILEAWAY_EMAIL_FROM` (`onboarding@resend.dev`) only delivers to your own Resend account
+  address — fine for a first test, but verify a domain before real signups.
 - **Custom production domain.** Currently on `whileaway.fly.dev`. To add one:
   `fly certs add <domain>`, point DNS, then update `WHILEAWAY_URL` + the extension's default base.
 - **Google OAuth** (optional): set the two `WHILEAWAY_GOOGLE_*` secrets to enable the Google button.

@@ -24,9 +24,34 @@ const BASE_URL = process.env.WHILEAWAY_URL || `http://localhost:${process.env.PO
 // to that file so tests can read it). A real email provider is wired here when configured — until
 // then the console transport is enough for our own testing (per the T-12 decision).
 async function sendMagicLink({ email, url }) {
+  // Always record the link locally first — the console/sink path is the fail-safe, so a flaky or
+  // unconfigured email provider can never block sign-in (dev reads it from the log; tests from the sink).
   const sink = process.env.WHILEAWAY_MAGIC_SINK;
   if (sink) { try { fs.appendFileSync(sink, JSON.stringify({ email, url }) + "\n"); } catch { /* ignore */ } }
   console.log(`[whileaway] magic link for ${email}: ${url}`);
+
+  // Real delivery (best-effort): if a Resend key is configured, email the link. Set
+  // WHILEAWAY_RESEND_KEY (+ WHILEAWAY_EMAIL_FROM once you've verified a domain in Resend; the
+  // default onboarding@resend.dev only delivers to your own account address). No key → console-only.
+  const key = process.env.WHILEAWAY_RESEND_KEY;
+  if (!key) return;
+  const from = process.env.WHILEAWAY_EMAIL_FROM || "whileaway <onboarding@resend.dev>";
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to: email,
+        subject: "Your whileaway sign-in link",
+        text: `Sign in to whileaway:\n\n${url}\n\nThis link is single-use and expires shortly. If you didn't request it, ignore this email.`,
+        html: `<p>Sign in to whileaway:</p><p><a href="${url}">Open your feed →</a></p><p style="color:#6b6a82;font-size:13px">This link is single-use and expires shortly. If you didn't request it, you can ignore this email.</p>`,
+      }),
+    });
+    if (!res.ok) console.warn(`[whileaway] Resend send failed (${res.status}) for ${email} — link still in the log above`);
+  } catch (e) {
+    console.warn(`[whileaway] Resend send error for ${email}:`, e.message, "— link still in the log above");
+  }
 }
 
 // Google sign-in is enabled only when its credentials are present (you'll add these pre-launch).

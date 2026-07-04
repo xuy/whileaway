@@ -48,14 +48,43 @@ function timeAgo(ts) {
   return Math.round(h / 24) + "d ago";
 }
 
+let connected = false;
 async function refreshStatus() {
   try {
     const h = await get("/health");
     $("pill").className = "pill ok";
     $("statusText").textContent = `connected · ${h.items} items · ${h.subscriptions} subs`;
+    connected = true;
   } catch (_) {
     $("pill").className = "pill bad";
     $("statusText").textContent = "offline";
+    connected = false;
+  }
+  return connected;
+}
+
+// First-run onboarding: shown until a real card previews. Points to the dashboard's connect page
+// where a hosted user copies their token + MCP snippet (self-host works with no token at all).
+function setOnboarding(show) {
+  const box = $("onboard");
+  if (!box) return;
+  const link = $("connectLink");
+  if (link) link.href = url("/"); // site root serves the console/dashboard (T-40 fills it out)
+  box.style.display = show ? "block" : "none";
+}
+
+// Pull the next card and render it; drives onboarding visibility. Returns true if a card showed.
+async function doPreview() {
+  try {
+    const item = await get("/v1/feed/peek"); // non-mutating — never consumes the card the AI tab will show
+    renderPreview(item);
+    setOnboarding(!item); // connected but empty → still guide the user
+    loadHistory();
+    return !!item;
+  } catch (_) {
+    renderPreview(null);
+    setOnboarding(true); // offline or unauthorized (hosted needs a token) → show the connect prompt
+    return false;
   }
 }
 
@@ -138,19 +167,16 @@ $("saveBase").addEventListener("click", async () => {
   state.base = $("apiBase").value.trim() || DEFAULT_BASE;
   await api.storage.local.set({ vf_api_base: state.base });
   await api.storage.local.remove("vf_cfg"); // drop cached config so the new backend's config is fetched
-  refreshStatus(); loadChannels(); loadHistory();
+  await refreshStatus(); loadChannels(); doPreview(); // auto-preview so a valid config shows a card immediately
 });
 $("saveToken").addEventListener("click", async () => {
   state.token = $("token").value.trim() || null;
   if (state.token) await api.storage.local.set({ vf_token: state.token });
   else await api.storage.local.remove("vf_token");
-  refreshStatus();
+  await refreshStatus(); loadChannels(); doPreview(); // renders a preview within seconds of a valid token
 });
 
-$("previewBtn").addEventListener("click", async () => {
-  try { renderPreview(await get("/v1/feed/next")); loadHistory(); }
-  catch (_) { renderPreview(null); }
-});
+$("previewBtn").addEventListener("click", doPreview);
 
 $("showBtn").addEventListener("click", async () => {
   const hint = $("showHint");
@@ -169,7 +195,8 @@ $("showBtn").addEventListener("click", async () => {
 
 (async function init() {
   await loadSettings();
-  refreshStatus();
+  await refreshStatus();
   loadChannels();
-  loadHistory();
+  if (connected) doPreview(); // auto-preview on open
+  else setOnboarding(true);
 })();

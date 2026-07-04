@@ -48,6 +48,16 @@ test("ambient item: push → next delivers once → seen records history", () =>
   assert.equal(bus.history("u1").length, 1);
 });
 
+// --- peek is non-mutating ---------------------------------------------------
+test("peek previews the next card without consuming it", () => {
+  const c = setup();
+  push(c, { title: "Only card" });
+  assert.equal(bus.peek("u1").title, "Only card");
+  assert.equal(bus.peek("u1").title, "Only card"); // idempotent — no delivery recorded
+  assert.equal(bus.next("u1").title, "Only card"); // still deliverable after peeking
+  assert.equal(bus.next("u1"), null); // now consumed (ambient once)
+});
+
 // --- dedupe upsert ----------------------------------------------------------
 test("dedupe_key upserts in place instead of creating a second item", () => {
   const c = setup();

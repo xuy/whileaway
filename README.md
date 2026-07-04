@@ -1,5 +1,7 @@
 # whileaway
 
+![whileaway — while an AI is thinking, a card from your feed surfaces: a Hacker News story, a saved article, your next Spanish lesson](docs/hero.jpg)
+
 **Your bookmarks, your reading list, that language you meant to learn — the pile you never get to.**
 
 whileaway turns it into a feed only you can read, filled by your AI one sentence at a time, and

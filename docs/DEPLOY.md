@@ -1,88 +1,70 @@
-# Deploy runbook — whileaway bus (hosted)
+# Deploy — whileaway (hosted)
 
-The hosted instance runs on Fly.io. Live: **https://whileaway.honestapp.org**
-(app `whileaway`, region `iad`). Config lives in `server/fly.toml` + `server/Dockerfile`.
+Production runs on Fly.io at **https://whileaway.honestapp.org** (app `whileaway`, region `iad`).
+Config lives in `server/fly.toml` + `server/Dockerfile`.
 
-## Architecture on Fly
+## Architecture
 
-- **One always-on machine** (`min_machines_running = 1`, `auto_stop_machines = "off"`).
-  Cold starts would break the product — the feed must answer instantly.
-- **Persistent volume** `whileaway_data` mounted at `/data`, holding BOTH sqlite DBs:
-  - `WHILEAWAY_STATE=/data/whileaway.db` — the bus store (owners, lanes, cards, delivery, metrics).
-  - `WHILEAWAY_AUTH_DB=/data/whileaway-auth.db` — Better Auth's own tables (users, sessions).
-- **`AUTH_MODE=hosted`** — token-only identity for producers/consumers; magic-link sessions for the
-  dashboard.
-- **Migration at container start** (not a Fly `release_command`): the Docker `CMD` runs
-  `npm run auth:migrate && node src/index.js`. Release VMs don't mount the app volume, so the auth
-  DB must be migrated on the machine that actually has `/data`. `auth:migrate` is idempotent.
-- **Deploy strategy `immediate`** (`[deploy]` in fly.toml): a single volume can't be mounted by a
-  second machine during a rolling deploy, so we replace in place (brief downtime, fine at v0).
+- Single always-on machine (`min_machines_running = 1`, `auto_stop_machines = "off"`) — the feed must answer instantly.
+- Persistent volume `whileaway_data` at `/data` holds both SQLite databases:
+  - `WHILEAWAY_STATE=/data/whileaway.db` — the store (owners, lanes, cards, delivery, metrics).
+  - `WHILEAWAY_AUTH_DB=/data/whileaway-auth.db` — Better Auth (users, sessions).
+- `AUTH_MODE=hosted`: bearer-token identity for producers/consumers; magic-link sessions for the dashboard.
+- Better Auth migrates at container start (the Docker `CMD` runs `auth:migrate` before boot, since Fly release VMs don't mount the volume). The migration is idempotent.
+- `[deploy] strategy = "immediate"`: one volume can't attach to two machines, so deploys replace in place.
 
-## One-time setup (already done for whileaway)
+## Secrets
+
+Fly secrets are write-only. Set with `fly secrets set NAME=value --app whileaway` (auto-restarts the machine).
+
+| secret | purpose |
+|--------|---------|
+| `WHILEAWAY_AUTH_SECRET` | signs Better Auth sessions — required in hosted mode |
+| `WHILEAWAY_KEY` | boot publisher key used by the reference pushers |
+| `WHILEAWAY_METRICS_TOKEN` | bearer required for `GET /v1/metrics` |
+| `WHILEAWAY_RESEND_KEY` | Resend API key for magic-link email |
+| `WHILEAWAY_EMAIL_FROM` | sender, e.g. `whileaway <hello@whileaway.honestapp.org>` (domain must be Resend-verified) |
+| `WHILEAWAY_GOOGLE_CLIENT_ID` / `WHILEAWAY_GOOGLE_CLIENT_SECRET` | optional — enables Google sign-in |
+
+## Setup
 
 ```sh
 cd server
 fly apps create whileaway --org personal
 fly volumes create whileaway_data --size 1 --region iad --app whileaway -y
-fly secrets set WHILEAWAY_AUTH_SECRET="$(openssl rand -hex 32)" --app whileaway
-fly secrets set WHILEAWAY_KEY="$(openssl rand -hex 18)" --app whileaway
-fly secrets set WHILEAWAY_METRICS_TOKEN="$(openssl rand -hex 24)" --app whileaway
+fly secrets set \
+  WHILEAWAY_AUTH_SECRET=$(openssl rand -hex 32) \
+  WHILEAWAY_KEY=$(openssl rand -hex 18) \
+  WHILEAWAY_METRICS_TOKEN=$(openssl rand -hex 24) \
+  --app whileaway
 ```
 
-Secrets (write-only — Fly can't read them back; record the metrics token where you can find it):
-- `WHILEAWAY_AUTH_SECRET` — signs Better Auth sessions. **Required** in hosted mode (boot fails without it).
-- `WHILEAWAY_KEY` — stable boot publisher key (used by the in-process reference pushers).
-- `WHILEAWAY_METRICS_TOKEN` — bearer required to read `GET /v1/metrics` in hosted mode.
-- `WHILEAWAY_GOOGLE_CLIENT_ID` / `WHILEAWAY_GOOGLE_CLIENT_SECRET` — optional; enable Google sign-in
-  when set (see "Pending" below).
+Custom domain: `fly certs add <domain> --app whileaway`, add the printed A/AAAA records (DNS-only if the domain is behind Cloudflare), then set `WHILEAWAY_URL` (`fly.toml`) and the extension's prod base (`extension/src/config.js`) to match.
 
 ## Deploy
 
 ```sh
-cd server
-fly deploy --app whileaway --ha=false
+cd server && fly deploy --app whileaway --ha=false
 ```
 
-The build compiles `better-sqlite3` from source (the Dockerfile installs `python3 make g++` for
-node-gyp), migrates the auth schema, then boots.
+The image installs `python3 make g++` (better-sqlite3 compiles from source), migrates the auth schema, then boots.
+
+## Email
+
+Magic links send via Resend when `WHILEAWAY_RESEND_KEY` is set, from `WHILEAWAY_EMAIL_FROM` (its domain must be verified in Resend). Success logs `emailed magic link … via Resend (id …)`. Without the key, links print to `fly logs` — the fallback path, and the default for self-host.
+
+## Metrics
+
+`GET /v1/metrics` — ops token required in hosted mode, open in self-host. Headline `seenRate = seenCards / deliveredCards`, counted per distinct `(user, card)`. Also reports `signups`, `tokensMinted`, `pushes`, `deliveries`, `activatedUsers`, `seenUsers`, and gauges `owners` / `liveTokens` / `lanes` / `cards`.
 
 ## Verify
 
 ```sh
-curl -s https://whileaway.honestapp.org/health            # {"ok":true}
-curl -s https://whileaway.honestapp.org/privacy -o /dev/null -w "%{http_code}\n"   # 200
+curl -s https://whileaway.honestapp.org/health                          # {"ok":true}
 curl -s -H "Authorization: Bearer $WHILEAWAY_METRICS_TOKEN" \
-     https://whileaway.honestapp.org/v1/metrics            # seen-rate + funnel
-fly logs --app whileaway                             # boot + magic-link lines
+     https://whileaway.honestapp.org/v1/metrics                         # seen-rate + funnel
 ```
 
-Full signup→seen E2E: POST `/api/auth/sign-in/magic-link` with an email, read the verify URL from
-`fly logs` (until an email transport is configured), GET it with a cookie jar to set the session,
-then `POST /v1/tokens` → `POST /v1/lanes/personal/cards` → `GET /v1/feed/next` → `POST /v1/feed/seen`.
+## Self-host
 
-## Metrics (the launch number)
-
-`GET /v1/metrics` (ops token in hosted; open in self-host). Headline is **`seenRate`** —
-`seenCards / deliveredCards`, counted per distinct (user, card) so re-surfaced must_see/recurring
-cards aren't double-counted. Also: `signups`, `tokensMinted`, `pushes`, `deliveries` (impressions),
-`activatedUsers`, `seenUsers`, and current gauges (`owners`, `liveTokens`, `lanes`, `cards`).
-
-## Pending (human-assisted)
-
-- **Email transport for public signup.** The Resend integration is now **wired** in
-  `sendMagicLink` (`server/src/auth.js`); it's dormant until you set the key. To turn on public
-  email delivery: create a Resend account, verify a sending domain, then
-  `fly secrets set WHILEAWAY_RESEND_KEY=re_… WHILEAWAY_EMAIL_FROM='whileaway <login@yourdomain>' --app whileaway`.
-  Without the key, links still print to `fly logs` (fail-safe fallback). The default
-  `WHILEAWAY_EMAIL_FROM` (`onboarding@resend.dev`) only delivers to your own Resend account
-  address — fine for a first test, but verify a domain before real signups.
-- **Custom domain — done.** Live on **`whileaway.honestapp.org`** (Fly cert issued via Let's
-  Encrypt; A/AAAA records point at the app, DNS-only/grey-cloud on Cloudflare). `WHILEAWAY_URL` and
-  the extension's default base already point here. To move to a different domain later:
-  `fly certs add <domain>`, add its A/AAAA (grey cloud), then re-run the domain sweep.
-- **Google OAuth** (optional): set the two `WHILEAWAY_GOOGLE_*` secrets to enable the Google button.
-
-## Self-host (no Fly, no accounts)
-
-`AUTH_MODE` defaults to `none`: header identity (`X-Whileaway-User`), a boot publisher key printed
-to the console, JSON-file storage (`WHILEAWAY_STORE=json`, the default). `npm start` in `server/`.
+`AUTH_MODE=none` (default): header identity (`X-Whileaway-User`), a boot publisher key printed to the console, JSON-file storage (`WHILEAWAY_STORE=json`). Run `npm start` in `server/`.

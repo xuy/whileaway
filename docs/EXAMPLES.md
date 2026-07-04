@@ -2,9 +2,9 @@
 
 Ten one-sentence prompts you can hand your agent once `whileaway-mcp` is connected. Each shows the
 tool call the agent makes and the cards it produces. Every example here is reproduced against a
-clean bus by `mcp/test/examples.test.js` — the source of truth is `mcp/examples/examples.js`.
+clean instance by `mcp/test/examples.test.js` — the source of truth is `mcp/examples/examples.js`.
 
-The trick that makes these one-liners work: the bus owns all the delivery logic (ambient vs
+The trick that makes these one-liners work: whileaway owns all the delivery logic (ambient vs
 must_see, recurring cooldowns, dedupe upsert), so the agent only has to translate intent into a
 `push_card`/`push_deck` call — no scheduling engine, no follow-up questions.
 
@@ -54,7 +54,7 @@ push_deck({ lane: "reading", cards: [
   { title: "Situational Awareness", url: "https://example.com/situational", kind: "article" },
 ]})
 ```
-Plain **ambient** cards — each shows once; the bus spreads them across many idle moments.
+Plain **ambient** cards — each shows once; whileaway spreads them across many idle moments.
 
 ### 5. A standup reminder that sticks
 > "Remind me about my 10am standup, and keep showing it until I've seen it."

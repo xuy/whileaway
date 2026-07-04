@@ -58,9 +58,8 @@ chat, send a prompt → a card appears. (No install? Open `extension/demo.html?b
 
 ## Or use the hosted instance
 
-**[whileaway.honestapp.org](https://whileaway.honestapp.org)** — sign in with a magic link, and the connect
-page hands you a token, a one-paste extension setup code, and your MCP snippet. (Public email
-signup is landing shortly; self-host works today with zero setup.)
+**[whileaway.honestapp.org](https://whileaway.honestapp.org)** — sign in with a magic link; the connect
+page hands you a token, a one-paste extension setup code, and your MCP snippet.
 
 ## Connect your agent (MCP)
 

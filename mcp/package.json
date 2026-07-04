@@ -1,6 +1,6 @@
 {
   "name": "whileaway-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server that turns any agent into a whileaway producer — push cards to your idle-moment feed in one sentence.",
   "type": "module",
   "bin": {
@@ -28,11 +28,11 @@
   "homepage": "https://whileaway.honestapp.org",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xuy/vibefeed.git",
+    "url": "git+https://github.com/xuy/whileaway.git",
     "directory": "mcp"
   },
   "bugs": {
-    "url": "https://github.com/xuy/vibefeed/issues"
+    "url": "https://github.com/xuy/whileaway/issues"
   },
   "keywords": [
     "mcp",

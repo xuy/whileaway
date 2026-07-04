@@ -48,7 +48,13 @@ async function sendMagicLink({ email, url }) {
         html: `<p>Sign in to whileaway:</p><p><a href="${url}">Open your feed →</a></p><p style="color:#6b6a82;font-size:13px">This link is single-use and expires shortly. If you didn't request it, you can ignore this email.</p>`,
       }),
     });
-    if (!res.ok) console.warn(`[whileaway] Resend send failed (${res.status}) for ${email} — link still in the log above`);
+    if (res.ok) {
+      let id = ""; try { id = (await res.json()).id || ""; } catch { /* ignore */ }
+      console.log(`[whileaway] emailed magic link to ${email} via Resend${id ? " (id " + id + ")" : ""}`);
+    } else {
+      let detail = ""; try { detail = JSON.stringify(await res.json()); } catch { /* ignore */ }
+      console.warn(`[whileaway] Resend send failed (${res.status}) for ${email} ${detail} — link still in the log above`);
+    }
   } catch (e) {
     console.warn(`[whileaway] Resend send error for ${email}:`, e.message, "— link still in the log above");
   }

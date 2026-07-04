@@ -50,6 +50,20 @@ export function mintKey(ownerId, label, opts = {}) {
   return key; // plaintext returned once; only the hash is persisted
 }
 
+// A token owner's keys, minus any secret material (no plaintext, no hash) — for the dashboard.
+export function listKeys(ownerId) {
+  return Object.values(db.keys)
+    .filter((rec) => rec.ownerId === ownerId)
+    .map((rec) => ({ id: rec.id, label: rec.label, scopes: rec.scopes, createdAt: rec.createdAt }));
+}
+// Revoke one of the owner's keys by its public id. Returns true if a key was removed.
+export function revokeKey(ownerId, keyId) {
+  for (const [hash, rec] of Object.entries(db.keys)) {
+    if (rec.id === keyId && rec.ownerId === ownerId) { delete db.keys[hash]; save(); return true; }
+  }
+  return false;
+}
+
 // Unified token resolution: one bearer token → { userId, ownerId, scopes }. Consumer routes
 // read userId; producer routes read ownerId and check scope. Returns null for empty/unknown.
 export function resolveToken(token) {

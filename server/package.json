@@ -8,6 +8,7 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "pushers": "node clients/runner.js",
+    "auth:migrate": "better-auth migrate -y --config src/auth.js",
     "migrate:sqlite": "node scripts/migrate-json-to-sqlite.js",
     "test": "WHILEAWAY_STATE=.whileaway-test-state.json node --test",
     "test:sqlite": "WHILEAWAY_STORE=sqlite WHILEAWAY_STATE=.whileaway-test.db node --test --test-concurrency=1"
@@ -16,7 +17,11 @@
     "node": ">=20"
   },
   "dependencies": {
+    "better-auth": "^1.6.23",
     "better-sqlite3": "^12.11.1",
     "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@better-auth/cli": "^1.4.21"
   }
 }

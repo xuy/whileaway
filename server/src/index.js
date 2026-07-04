@@ -12,7 +12,6 @@ import { hit, LIMITS } from "./ratelimit.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-app.use(express.json({ limit: "256kb" }));
 
 const PORT = process.env.PORT || 4000;
 const AUTH_MODE = process.env.AUTH_MODE || "none"; // "none" (self-host) | "hosted"
@@ -28,6 +27,24 @@ function bearer(req) {
   const m = /^Bearer (.+)$/.exec(req.get("Authorization") || "");
   return m && m[1];
 }
+
+// Better Auth (hosted mode only). Its handler MUST be mounted before express.json — it reads the
+// raw request body. Loaded dynamically so self-host (none) never pulls in better-auth or opens an
+// auth DB. `session(req)` resolves the logged-in dashboard user, or null.
+let auth = null, fromNodeHeaders = null;
+if (AUTH_MODE === "hosted") {
+  const [authMod, nodeMod] = await Promise.all([import("./auth.js"), import("better-auth/node")]);
+  auth = authMod.auth;
+  fromNodeHeaders = nodeMod.fromNodeHeaders;
+  app.all("/api/auth/*", nodeMod.toNodeHandler(auth));
+}
+async function session(req) {
+  if (!auth) return null;
+  try { return (await auth.api.getSession({ headers: fromNodeHeaders(req.headers) })) || null; }
+  catch { return null; }
+}
+
+app.use(express.json({ limit: "256kb" }));
 
 // Admin web console (static). Served at / — drives the same /v1 API you'd use programmatically.
 app.use(express.static(path.join(__dirname, "../public")));
@@ -170,6 +187,32 @@ app.post("/v1/channels/:id/items", publisher, wrap((req, res) => {
 app.post("/v1/keys", publisher, wrap((req) => ({
   key: bus.mintKey(req.ownerId, (req.body || {}).label || "", { userId: req.auth.userId, scopes: req.auth.scopes }),
 })));
+
+// ---- hosted: dashboard session endpoints ---------------------------------
+// Identity, lanes, and token labels for the signed-in dashboard user (session cookie, not bearer).
+app.get("/v1/me", async (req, res) => {
+  const s = await session(req);
+  if (!s || !s.user) return void res.status(401).json({ error: "not signed in" });
+  const uid = s.user.id;
+  bus.ensureOwner(uid, s.user.email || s.user.name || uid); // idempotent — signup hook already ran
+  res.json({
+    user: { id: uid, email: s.user.email, name: s.user.name },
+    lanes: bus.listChannels(uid),
+    tokens: bus.listKeys(uid),
+  });
+});
+// Mint (or revoke) a bearer token for the signed-in user. Plaintext is returned exactly once.
+app.post("/v1/tokens", async (req, res) => {
+  const s = await session(req);
+  if (!s || !s.user) return void res.status(401).json({ error: "not signed in" });
+  const uid = s.user.id;
+  const body = req.body || {};
+  if (body.action === "revoke") return void res.json({ revoked: bus.revokeKey(uid, body.keyId) });
+  bus.ensureOwner(uid, s.user.email || uid);
+  const label = String(body.label || "token").slice(0, 40);
+  const token = bus.mintKey(uid, label, { userId: uid }); // userId === ownerId for a hosted god-token
+  res.json({ token, label }); // shown once; only the hash is persisted
+});
 
 // ---- boot ----------------------------------------------------------------
 bus.init();

@@ -4,7 +4,7 @@ Status: draft for build · Owner: Eric · Last updated: 2026-07-03
 
 ## 1. One-liner
 
-**whileaway is the feed only you can publish to** — the one channel where only you reach you. You
+**whileaway is the feed only you can publish to** — the one lane where only you reach you. You
 tell your agent one sentence ("push me a stoic quote each morning, expire at noon") and it fills
 your feed. Not an ad, not someone else's algorithm.
 
@@ -26,10 +26,10 @@ page, `demo.html`, and the dashboard's feed view — three renderers of one API)
   incentives.
 - **Why now:** person-controls-their-inputs already existed — it was RSS. It lost to algorithmic
   feeds on *labor*, not ideology: curating your own inputs was work, and platforms made passivity
-  free. Your agent now does that labor. Self-publishing to yourself used to cost effort per item;
+  free. Your agent now does that labor. Self-publishing to yourself used to cost effort per card;
   with MCP it costs one sentence per *intent*. The idea was right for twenty years and only became
   practical ~eighteen months ago.
-- **The shareable unit is the recipe**, not the channel: the sentence you told your agent. Recipes
+- **The shareable unit is the recipe**, not the lane: the sentence you told your agent. Recipes
   spread like dotfiles and awesome-lists — copyable text, zero access granted, sovereignty intact.
   `docs/EXAMPLES.md` is the recipe book and the growth engine.
 - **Single-user is the thesis, not a compromise.** The future team feature is just "a recipe whose
@@ -49,12 +49,12 @@ In scope:
 - **Chrome extension** published on the Chrome Web Store, authenticated by token.
 - **Accounts (hosted only):** email magic link + Google sign-in via Better Auth. Dashboard mints
   bearer tokens. Self-host runs `AUTH_MODE=none`.
-- **Lanes:** private channels owned by the user. Agents can create them. Mute/round-robin
+- **Lanes:** private lanes owned by the user. Agents can create them. Mute/round-robin
   fairness comes free from the existing bus.
-- **Default starter channels** (Wikipedia, HN, RSS) as optional subscriptions so the feed is
+- **Default starter lanes** (Wikipedia, HN, RSS) as optional subscriptions so the feed is
   alive before any agent pushes.
 
-Out of scope (deliberately deferred, not deleted): teams/join links, public channel directory,
+Out of scope (deliberately deferred, not deleted): teams/join links, public lane directory,
 broadcast, remote/OAuth MCP, mobile, Firefox/Safari, payments.
 
 ## 3. The team-readiness rules (cost: zero code, all discipline)
@@ -102,7 +102,7 @@ extends the existing `server/public` console rather than a separate app).
   and check scope. Existing publisher-key hashing in `store.db.keys` is reused; add `userId` and
   `scopes` fields to the key record.
 - On signup: create owner + user, mint one god-token, create the private "Personal" lane,
-  auto-subscribe to it and to starter channels.
+  auto-subscribe to it and to starter lanes.
 
 ### 5.2 Storage
 
@@ -113,7 +113,7 @@ extends the existing `server/public` console rather than a separate app).
 ### 5.3 Hardening (hosted minimum)
 
 - Rate limits: per-token push (e.g. 60/min), per-user feed pulls (e.g. 120/min).
-- Payload caps already exist (256kb); add per-user item cap and lane cap (e.g. 50 lanes).
+- Payload caps already exist (256kb); add per-user card cap and lane cap (e.g. 50 lanes).
 - CORS: keep `*` for GET feed routes; token is the credential.
 - Deploy: Fly.io or Railway, single region, HTTPS, `WHILEAWAY_STATE` on a volume until SQLite
   lands. Health check exists (`/health`).
@@ -133,9 +133,9 @@ npm package, stdio transport, config via `WHILEAWAY_URL` + `WHILEAWAY_TOKEN`. Th
 
 | tool | maps to | notes |
 |------|---------|-------|
-| `push_card` | POST `/v1/channels/:lane/items` | title, body, url?, image_url?, lane?, priority?, class (`ambient`\|`must_see`), expires_at?, repeat? (`once`\|`recurring`+cooldown_s+max), dedupe_key?. Creates the lane if missing. |
+| `push_card` | POST `/v1/lanes/:lane/cards` | title, body, url?, image_url?, lane?, priority?, class (`ambient`\|`must_see`), expires_at?, repeat? (`once`\|`recurring`+cooldown_s+max), dedupe_key?. Creates the lane if missing. |
 | `push_deck` | loop of push_card | convenience: array of cards + shared repeat/cooldown. This is the "push 50 Spanish cards once, bus drips them for weeks" move. |
-| `create_lane` / `list_lanes` | POST/GET `/v1/channels` | lanes are private channels owned by the token's owner |
+| `create_lane` / `list_lanes` | POST/GET `/v1/lanes` | lanes are private lanes owned by the token's owner |
 | `get_history` | GET `/v1/feed/history` | what was delivered + seen state — lets agents do spaced repetition without whileaway building an SR engine |
 | `get_feed_status` | GET `/health` + `/v1/me` | queue depth per lane, so agents don't overflood |
 
@@ -162,7 +162,7 @@ Single small site served by the bus at `/`:
   Claude), three copy-paste examples of producer-in-a-sentence, install CTA.
 - **Dashboard (session-auth'd):** token mint/revoke with copy buttons, ready-made MCP config
   snippet (`claude mcp add whileaway …` + JSON for other clients), lanes list with mute, recent
-  history, starter-channel toggles.
+  history, starter-lane toggles.
 - **Docs page:** quickstart (5 steps), API reference (exists in README — lift it), self-host guide.
 
 ## 9. Onboarding flow (the <5 minute contract)
@@ -170,7 +170,7 @@ Single small site served by the bus at `/`:
 1. Land → "Start your feed" → magic link or Google → dashboard.
 2. Dashboard shows: token (copy), extension install button (Web Store), MCP snippet (copy).
 3. Install extension → paste backend URL + token → popup shows live preview card immediately
-   (starter channels guarantee content exists).
+   (starter lanes guarantee content exists).
 4. Open claude.ai / chatgpt.com, send a prompt → card appears.
 5. First producer moment (the aha): tell your agent —
    *"Add 20 cards teaching me basic Spanish greetings to my whileaway, spaced over two weeks."*
@@ -189,5 +189,5 @@ Success criterion: a stranger completes 1–4 in under 5 minutes without reading
 
 - **Chrome Web Store review time** is the critical path — submit before the rest is polished.
 - **Anti-goal creep:** no teams, no directory, no remote MCP in v0. Ship the loop.
-- Open: production domain name; whether starter channels are on or off by default for new
+- Open: production domain name; whether starter lanes are on or off by default for new
   hosted users (recommend: on, with visible mute).

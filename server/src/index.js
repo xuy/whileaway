@@ -163,7 +163,11 @@ app.get("/v1/feed/history", wrap((req) => ({ cards: bus.history(user(req), Numbe
 // A lane rendered as an Atom feed — proof the feed outlives our own clients. Public lanes serve
 // anonymously (the "subscribe to it in any reader" demo); private/unlisted need a bearer token
 // that can see the lane (header only — we never accept a token in the URL). Self-host is open.
-function xmlEsc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function xmlEsc(s) {
+  return String(s == null ? "" : s)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "") // strip chars illegal in XML 1.0 (would break the whole feed)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
 function renderAtom(lane, cards, origin) {
   const self = `${origin}/v1/lanes/${encodeURIComponent(lane.id)}/feed.xml`;
   const updated = (cards[0] ? new Date(cards[0].createdAt) : new Date()).toISOString();
@@ -179,8 +183,11 @@ app.get("/v1/lanes/:id/feed.xml", (req, res) => {
   if (!lane) return void res.status(404).type("text/plain").send("no such lane");
   if (AUTH_MODE === "hosted" && lane.visibility !== "public") {
     const auth = bus.resolveToken(bearer(req));
-    if (!bus.laneVisibleTo(auth ? auth.userId : "", lane.id, auth && auth.ownerId)) {
-      return void res.status(401).type("text/plain").send("private lane — provide a bearer token that can see it");
+    // Require read:feed (not just visibility) so a push-only/create-only token can't read private
+    // feed contents via RSS — same scope bar as the consumer feed routes.
+    const ok = auth && bus.hasScope(auth.scopes, "read:feed") && bus.laneVisibleTo(auth.userId, lane.id, auth.ownerId);
+    if (!ok) {
+      return void res.status(401).type("text/plain").send("private lane — provide a bearer token with read:feed that can see it");
     }
   }
   const origin = `${req.protocol}://${req.get("host")}`;

@@ -46,7 +46,7 @@ function show(id) { for (const s of ["loading", "signin", "connected"]) $(s).cla
 
 // ---------- status ----------
 async function refreshStatus() {
-  try { const r = await apiGet("/health"); if (!r.ok) throw 0; $("dot").className = "dot ok"; $("statusText").textContent = "bus online"; return true; }
+  try { const r = await apiGet("/health"); if (!r.ok) throw 0; $("dot").className = "dot ok"; $("statusText").textContent = "connected"; return true; }
   catch { $("dot").className = "dot bad"; $("statusText").textContent = "offline"; return false; }
 }
 
@@ -142,6 +142,8 @@ async function renderConnected() {
 
 // ---------- copy wires ----------
 document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-copy-text]"); // static landing recipes: copy the literal text
+  if (t) { navigator.clipboard.writeText(t.dataset.copyText || "").then(() => toast("Recipe copied — paste it to your agent")); return; }
   const b = e.target.closest("[data-copy]"); if (!b) return;
   const el = $(b.dataset.copy); navigator.clipboard.writeText((el && el._raw) || "").then(() => toast("Copied"));
 });

@@ -27,6 +27,34 @@
   .dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)}
   .tagline{color:var(--muted);font-size:14.5px;margin:0 0 26px}
 
+  /* landing */
+  .hero{padding:14px 0 26px}
+  .htitle{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 12px;line-height:1.15}
+  .hlede{font-size:16px;color:var(--ink2);margin:0 0 20px;max-width:56ch;line-height:1.55}
+  .cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;font-size:14.5px;
+    padding:11px 20px;border-radius:10px}
+  .cta:hover{filter:brightness(1.05)}
+  .hsub{font-size:12.5px;color:var(--faint);margin:12px 0 0}
+  .how{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+  .howstep{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:15px 15px}
+  .howstep .hn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;
+    background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:700;margin-bottom:9px}
+  .howstep b{display:block;font-size:14px;margin-bottom:4px}
+  .howstep p{font-size:12.5px;color:var(--muted);margin:0;line-height:1.45}
+  .recipe{display:flex;align-items:center;gap:10px;background:var(--accent-soft);border-radius:10px;
+    padding:11px 13px;margin-bottom:9px}
+  .recipe .rtext{flex:1;font-size:13.5px;color:var(--ink);font-style:italic;line-height:1.4}
+  .recipe .mini{flex:none}
+  .reciphero .recipe{background:var(--accent);}
+  .reciphero .rtext{color:#fff;font-style:normal;font-weight:500}
+  .reciphero .recipe .mini{background:rgba(255,255,255,0.9);color:var(--accent)}
+  .surfaces{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:2px 0 4px}
+  .surf{border:1px solid var(--line);border-radius:10px;padding:12px}
+  .surf b{display:block;font-size:13px;margin-bottom:3px}
+  .surf span{font-size:12px;color:var(--muted);line-height:1.4}
+  .whynow p{font-size:13.5px;color:var(--ink2);line-height:1.6;margin:0}
+  @media(max-width:600px){.how,.surfaces{grid-template-columns:1fr}.htitle{font-size:25px}}
+
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 18px;margin-bottom:16px}
   .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 4px;font-weight:700}
   .card .sub{font-size:13px;color:var(--muted);margin:0 0 13px}
@@ -92,14 +120,62 @@
     <h1>whileaway</h1>
     <div class="status"><span class="dot" id="dot"></span><span id="statusText">…</span></div>
   </header>
-  <p class="tagline">The feed only you can publish to. Connect your agent below.</p>
+  <p class="tagline">The feed only you can publish to.</p>
 
   <!-- LOADING -->
   <div id="loading" class="card"><div class="empty">Loading…</div></div>
 
-  <!-- SIGN IN (hosted, not authed) -->
+  <!-- LANDING + SIGN IN (hosted, not authed) -->
   <section id="signin" class="hidden">
+    <div class="hero">
+      <h2 class="htitle">The feed only you can publish to.</h2>
+      <p class="hlede">One feed where only <b>you</b> reach you. Tell your agent a sentence — <i>“push me a stoic quote each morning”</i> — and it fills your feed. Not an ad, not someone else's algorithm. You skim it in the seconds you'd otherwise spend waiting on an AI.</p>
+      <a href="#start" class="cta">Start your feed →</a>
+      <p class="hsub">Free · magic-link sign-in · open source & self-hostable</p>
+    </div>
+
+    <div class="how">
+      <div class="howstep"><span class="hn">1</span><b>Tell your agent</b><p>One sentence, over MCP. “Teach me Spanish, spaced over two weeks.”</p></div>
+      <div class="howstep"><span class="hn">2</span><b>It fills your feed</b><p>Your agent pushes cards to a lane; whileaway handles spacing, dedupe and priority.</p></div>
+      <div class="howstep"><span class="hn">3</span><b>You glance</b><p>A card appears while an AI thinks — or in a new tab, in RSS, anywhere.</p></div>
+    </div>
+
+    <div class="card reciphero">
+      <h2>The recipe</h2>
+      <p class="sub">A <b>recipe</b> is the sentence you hand your agent. This is the one that shows off whileaway:</p>
+      <div class="recipe">
+        <span class="rtext">“Add cards teaching me basic Spanish greetings to my whileaway, spaced over two weeks.”</span>
+        <button class="ghost mini" data-copy-text="Add cards teaching me basic Spanish greetings to my whileaway, spaced over two weeks.">Copy</button>
+      </div>
+      <p class="hint">Your agent turns it into one <code>push_deck</code> call. whileaway drips the cards ~once a day for two weeks — spaced repetition, no scheduling engine.</p>
+    </div>
+
     <div class="card">
+      <h2>One feed, any surface</h2>
+      <p class="sub">Your feed is an API, not an app. Every surface is a thin client of one endpoint (<code>GET /v1/feed/next</code>).</p>
+      <div class="surfaces">
+        <div class="surf"><b>Browser overlay</b><span>A card in the corner while an AI generates.</span></div>
+        <div class="surf"><b>New tab</b><span>Your next card each time you open a tab.</span></div>
+        <div class="surf"><b>Dashboard &amp; RSS</b><span>Read it here, or pipe a lane into any RSS reader.</span></div>
+      </div>
+      <p class="hint">Launch surface #1 is the seconds you wait on an AI — a Chrome extension. We start there; we're not married to it.</p>
+    </div>
+
+    <div class="card">
+      <h2>More recipes</h2>
+      <p class="sub">Copyable sentences — hand any of them to your agent.</p>
+      <div class="recipe"><span class="rtext">“Resurface the commitments I made in today's meetings until I act on them.”</span><button class="ghost mini" data-copy-text="Resurface the commitments I made in today's meetings until I act on them.">Copy</button></div>
+      <div class="recipe"><span class="rtext">“Drip me one quote from Marcus Aurelius every few hours.”</span><button class="ghost mini" data-copy-text="Drip me one quote from Marcus Aurelius every few hours.">Copy</button></div>
+      <div class="recipe"><span class="rtext">“Queue these articles to skim while I'm waiting on the AI.”</span><button class="ghost mini" data-copy-text="Queue these articles to skim while I'm waiting on the AI.">Copy</button></div>
+      <div class="recipe"><span class="rtext">“Remind me about my 10am standup, and keep showing it until I've seen it.”</span><button class="ghost mini" data-copy-text="Remind me about my 10am standup, and keep showing it until I've seen it.">Copy</button></div>
+    </div>
+
+    <div class="card whynow">
+      <h2>Why now</h2>
+      <p>Person-controls-their-inputs already existed — it was RSS. It lost to algorithmic feeds on <i>labor</i>, not ideology: curating your own inputs was work, and platforms made passivity free. Your agent now does that labor. Self-publishing to yourself used to cost effort per card; with MCP it costs one sentence per <i>intent</i>. The idea was right for twenty years and only became practical about eighteen months ago.</p>
+    </div>
+
+    <div class="card" id="start">
       <h2>Start your feed</h2>
       <p class="sub">Sign in with a magic link. No password.</p>
       <label for="email">Email</label>
@@ -157,7 +233,7 @@
     <!-- lanes -->
     <div class="card">
       <h2>Your lanes</h2>
-      <p class="sub">Streams in your feed. Mute anything you don't want right now.</p>
+      <p class="sub">Lanes in your feed. Mute anything you don't want right now.</p>
       <div id="lanes"><div class="empty">…</div></div>
     </div>
 

@@ -3,8 +3,8 @@
 //
 // Flip ENV to "dev" for localhost, "prod" for your deployed backend. The popup can also
 // override the base URL at runtime (stored in chrome.storage as "vf_api_base").
-var VF_ENV = "dev"; // "dev" | "prod"
-var VF_DEBUG = true; // console logs on the AI page; set false to silence
+var VF_ENV = "dev"; // "dev" | "prod" — flip to "prod" when packaging for the Web Store
+var VF_DEBUG = false; // console logs on the AI page; off by default (silent degradation) — flip on to debug
 
 var VF_ENVS = {
   dev: { api: "http://localhost:4000" },

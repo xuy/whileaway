@@ -5,7 +5,10 @@ $5 fee, capturing screenshots, clicking Submit) are marked ⚠️. Everything el
 
 ## Package the extension
 
-The upload is a zip of the `extension/` directory (manifest at the zip root):
+Before zipping, set the shipped defaults in `extension/src/config.js`: `VF_ENV = "prod"` (so a
+fresh install points at `whileaway.fly.dev` out of the box) and confirm `VF_DEBUG = false` (no
+console output on AI pages — already the default). Then zip the `extension/` directory (manifest at
+the zip root):
 
 ```bash
 cd extension

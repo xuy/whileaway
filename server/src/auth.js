@@ -13,7 +13,10 @@ import { magicLink } from "better-auth/plugins";
 import * as bus from "./bus.js";
 
 const AUTH_DB = process.env.WHILEAWAY_AUTH_DB || path.join(process.cwd(), ".whileaway-auth.db");
-const SECRET = process.env.WHILEAWAY_AUTH_SECRET || "dev-insecure-secret-change-me-in-prod";
+// Required in hosted mode (this module only loads when AUTH_MODE=hosted). Fail closed rather than
+// fall back to a shared, guessable default that would sign every deployment's sessions the same.
+const SECRET = process.env.WHILEAWAY_AUTH_SECRET;
+if (!SECRET) throw new Error("WHILEAWAY_AUTH_SECRET is required in hosted mode (generate one: openssl rand -hex 32)");
 const BASE_URL = process.env.WHILEAWAY_URL || `http://localhost:${process.env.PORT || 4000}`;
 
 // Magic-link delivery. Dev/default: log the link (and, if WHILEAWAY_MAGIC_SINK is set, append it

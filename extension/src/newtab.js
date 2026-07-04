@@ -60,9 +60,11 @@ async function markSeenSoon(id) {
   setTimeout(fire, 3500);
 }
 
-(async function init() {
-  await loadSettings();
-  $("dash").href = url("/");
+// Deliver only once the tab is actually LOOKED AT. next() consumes a card, so a tab opened in the
+// background (middle-click, session restore) must NOT burn one — we wait for it to become visible.
+let ran = false;
+async function run() {
+  if (ran) return; ran = true;
   try {
     const r = await fetch(url("/v1/feed/next"), { headers: headers() });
     if (r.status === 204) {
@@ -79,5 +81,17 @@ async function markSeenSoon(id) {
     markSeenSoon(item.id);
   } catch (_) {
     renderEmpty(`Set your backend in the whileaway popup to see cards here.`);
+  }
+}
+
+(async function init() {
+  await loadSettings();
+  $("dash").href = url("/");
+  if (document.hidden) {
+    // opened in the background — defer the (consuming) fetch until the tab is first viewed.
+    const onVis = () => { if (!document.hidden) { document.removeEventListener("visibilitychange", onVis); run(); } };
+    document.addEventListener("visibilitychange", onVis);
+  } else {
+    run();
   }
 })();

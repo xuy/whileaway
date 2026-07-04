@@ -230,9 +230,11 @@ async function loadChannelOptions() {
     const r = await apiGet("/v1/channels"); const owned = r.body.channels.filter((c) => c.owned);
     const list = owned.length ? owned : r.body.channels;
     const cur = $("p_channel").value;
-    $("p_channel").innerHTML = list.map((c) => `<option value="${esc(c.id)}">${esc(c.id)}</option>`).join("");
-    if (cur && list.some((c) => c.id === cur)) $("p_channel").value = cur;
-    else if (list.some((c) => c.id === "personal")) $("p_channel").value = "personal";
+    // Push targets use the owner-scoped SLUG (the push route resolves it within your namespace);
+    // the global id is only for consumer ops like subscribe.
+    $("p_channel").innerHTML = list.map((c) => `<option value="${esc(c.slug)}">${esc(c.slug)}</option>`).join("");
+    if (cur && list.some((c) => c.slug === cur)) $("p_channel").value = cur;
+    else if (list.some((c) => c.slug === "personal")) $("p_channel").value = "personal";
     renderCode("it");
   } catch {}
 }

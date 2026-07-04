@@ -157,6 +157,27 @@ $("copyToken").addEventListener("click", () => { if (!cfg.token) return toast("n
 $("copySetup").addEventListener("click", () => { if (!cfg.token) return toast("generate a token first", true); safeCopy(setupCode(), "Setup code copied — paste it in the extension"); });
 $("mintToken").addEventListener("click", mintToken);
 
+// Follow a public lane by id or link (T-54). Accepts a raw lane id (`ownerId:slug`) or any
+// whileaway URL containing `/v1/lanes/<id>` (e.g. the RSS link). Public/unlisted only — the
+// server rejects private lanes you don't own.
+function parseLaneRef(s) {
+  s = (s || "").trim();
+  if (!s) return "";
+  const m = s.match(/\/v1\/lanes\/([^/?#]+)/);
+  return m ? decodeURIComponent(m[1]) : s;
+}
+async function followLane() {
+  const ref = parseLaneRef($("followInput").value);
+  if (!ref) return;
+  const r = await apiPost("/v1/subscriptions", { laneId: ref, action: "subscribe" });
+  if (r.ok) { $("followInput").value = ""; toast("Following " + ref); loadLanes(); }
+  else if (r.status === 404) toast("no such public lane", true);
+  else if (r.status === 403) toast("that lane is private", true);
+  else toast(r.body && r.body.error || "couldn't follow", true);
+}
+$("followBtn").addEventListener("click", followLane);
+$("followInput").addEventListener("keydown", (e) => { if (e.key === "Enter") followLane(); });
+
 // ---------- sign in ----------
 $("sendLink").addEventListener("click", async () => {
   const email = $("email").value.trim();
